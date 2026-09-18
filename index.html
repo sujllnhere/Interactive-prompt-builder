@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pavilion Prompt Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root{ --bg:#0b0b0d; }
+  html,body{ background:var(--bg); }
+  body{ font-family:'Inter', sans-serif; color:#f2efe9; }
+  .font-display{ font-family:'Space Grotesk', sans-serif; }
+  .font-mono{ font-family:'JetBrains Mono', monospace; }
+
+  ::-webkit-scrollbar{ width:8px; height:8px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:#2a2a2e; border-radius:8px; }
+
+  @keyframes fadeIn{ from{opacity:0; transform:scale(.97);} to{opacity:1; transform:scale(1);} }
+  @keyframes fadeInUp{ from{opacity:0; transform:translateY(10px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);} }
+  @keyframes progressStripe{ 0%{background-position:0 0;} 100%{background-position:40px 0;} }
+  @keyframes bubblePop{
+    0%{ transform: translate(-50%,-50%) scale(1); }
+    35%{ transform: translate(-50%,-50%) scale(.84); }
+    65%{ transform: translate(-50%,-50%) scale(1.14); }
+    100%{ transform: translate(-50%,-50%) scale(1); }
+  }
+  @keyframes glowPulse{
+    0%,100%{ box-shadow: 0 0 0 1.5px var(--glow), 0 0 14px 2px var(--glow); }
+    50%{ box-shadow: 0 0 0 1.5px var(--glow), 0 0 26px 6px var(--glow); }
+  }
+  @keyframes hubBreathe{
+    0%,100%{ transform:translate(-50%,-50%) scale(1); }
+    50%{ transform:translate(-50%,-50%) scale(1.035); }
+  }
+  @keyframes catBreathe{
+    0%,100%{ opacity:1; }
+    50%{ opacity:.82; }
+  }
+
+  .progress-stripes{
+    background-image: linear-gradient(45deg, rgba(255,255,255,.15) 25%, transparent 25%, transparent 50%, rgba(255,255,255,.15) 50%, rgba(255,255,255,.15) 75%, transparent 75%, transparent);
+    background-size: 24px 24px;
+    animation: progressStripe 1s linear infinite;
+  }
+
+  .chip-x:hover{ opacity:1; }
+  .prompt-frag{ border-bottom:2px solid var(--frag-color); padding-bottom:1px; }
+
+  /* ---------- 2D relationship graph ---------- */
+  #graphField{ position:absolute; inset:0; }
+
+  .bubble{
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    background: rgba(255,255,255,0.055);
+    box-shadow: 0 6px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+  }
+
+  .hub-bubble{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    padding:16px 28px; border-radius:9999px; text-align:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; letter-spacing:.09em;
+    color:#f2efe9; border:1px solid rgba(255,255,255,.14);
+    animation: hubBreathe 5s ease-in-out infinite;
+    z-index:5; pointer-events:none;
+  }
+
+  .cat-anchor{
+    position:absolute; transform:translate(-50%,-50%);
+    padding:13px 24px; border-radius:9999px; white-space:nowrap;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px;
+    border:1.5px solid rgba(255,255,255,.16);
+    animation: catBreathe 4.5s ease-in-out infinite;
+    pointer-events:none;
+    z-index:6;
+  }
+  .cat-anchor .cat-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+  .cat-badge{
+    position:absolute; top:-7px; right:-7px; min-width:18px; height:18px; padding:0 4px;
+    border-radius:9999px; background:#f5c07a; color:#0b0b0d; font-size:10px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; font-family:'Inter',sans-serif;
+    box-shadow:0 2px 6px rgba(0,0,0,.45);
+  }
+
+  .leaf-bubble{
+    position:absolute; transform:translate(-50%,-50%) scale(1);
+    padding:9px 16px; border-radius:9999px; white-space:nowrap; cursor:pointer;
+    font-size:12px; color:#e5e5e5; border:1px solid #2a2a2e;
+    transition: transform .25s cubic-bezier(.22,1,.36,1), background-color .25s ease, border-color .25s ease, color .25s ease;
+    z-index:7;
+  }
+  .leaf-bubble:hover{ transform:translate(-50%,-50%) scale(1.12); }
+  .leaf-bubble.is-selected{ font-weight:600; animation: glowPulse 2.6s ease-in-out infinite; }
+  .bubble-pop{ animation: bubblePop .42s cubic-bezier(.34,1.56,.64,1); }
+  .leaf-bubble.is-selected.bubble-pop{ animation: bubblePop .42s cubic-bezier(.34,1.56,.64,1), glowPulse 2.6s ease-in-out infinite; }
+
+  #graphLines{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+
+  .locked-chip{
+    font-size:10px; padding:2px 9px; border-radius:9999px; border:1px solid rgba(255,255,255,.08);
+    color:#6b7280; background:rgba(255,255,255,.02); white-space:nowrap;
+  }
+
+  /* mood preview card, follows cursor */
+  #imgPopover{
+    position:fixed; z-index:50; width:220px; border-radius:16px; overflow:hidden;
+    border:1px solid rgba(255,255,255,.12);
+    background:rgba(20,20,23,.8);
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 20px 45px rgba(0,0,0,.5);
+    opacity:0; left:0; top:0;
+    transform:translate(-50%,calc(-100% - 16px)) scale(.96);
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events:none;
+  }
+  #imgPopover.is-visible{ transform:translate(-50%,calc(-100% - 16px)) scale(1); opacity:1; }
+  #imgPopover.flip-below{ transform:translate(-50%,16px) scale(.96); }
+  #imgPopover.flip-below.is-visible{ transform:translate(-50%,16px) scale(1); opacity:1; }
+  #imgSwatch{ height:112px; position:relative; }
+  #imgSwatch::after{
+    content:''; position:absolute; inset:0;
+    background-image: radial-gradient(circle at 25% 20%, rgba(255,255,255,.35), transparent 45%), radial-gradient(circle at 82% 80%, rgba(0,0,0,.28), transparent 50%);
+    mix-blend-mode:overlay;
+  }
+
+  /* ---------- bottom dock ---------- */
+  #dockBar{
+    backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    background: rgba(23,23,23,0.82);
+    border-top: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 -12px 40px rgba(0,0,0,.35);
+  }
+  #dropZone{ transition: border-color .2s ease; }
+
+  /* ---------- result modal ---------- */
+  #resultModal{ position:fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; }
+  #resultModal.hidden{ display:none; }
+  #resultModalBackdrop{ position:absolute; inset:0; background:rgba(6,6,7,.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  #resultModalCard{
+    position:relative; z-index:1; width:min(720px, 90vw);
+    background:rgba(24,24,27,.92);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:22px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    padding:22px;
+    animation: fadeInUp .35s cubic-bezier(.22,1,.36,1);
+  }
+
+  /* result panels follow the reference image's own aspect ratio (--r = width/height)
+     and are height-capped, so tall images shrink instead of being cropped */
+  .ratio-box{ aspect-ratio: var(--r, 1.5); width: min(100%, calc(56vh * var(--r, 1.5))); margin: 0 auto; background:#0f0f11; position:relative; }
+  #resultModalCard .grid{ align-items:start; }
+
+  /* ---------- reference image slots ---------- */
+  .slot{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; }
+  .slot-label{ display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:10px; color:#8b8b93; margin-bottom:5px; white-space:nowrap; }
+  .slot-req{ font-weight:600; color:#f5c07a; font-size:9px; }
+  .slot-badge{ font-size:9px; padding:0 6px; border-radius:9999px; background:rgba(245,192,122,.16); color:#f5c07a; }
+  .slot-drop{ position:relative; flex:1; border:1px dashed #3a3a40; border-radius:12px; background:rgba(0,0,0,.2); display:flex; align-items:center; justify-content:center; text-align:center; cursor:pointer; overflow:hidden; transition:border-color .2s ease; }
+  .slot-drop:hover, .slot-drop.is-over{ border-color:#6a6a74; }
+  .slot-empty{ font-size:10.5px; color:#6b7280; line-height:1.4; padding:0 6px; }
+  .slot-empty small{ display:block; color:#4b5563; font-size:9.5px; margin-top:3px; }
+  .slot-preview{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
+  .slot-clear{ position:absolute; top:4px; right:4px; width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; font-size:9px; display:flex; align-items:center; justify-content:center; }
+  .slot-clear:hover{ background:rgba(0,0,0,.85); }
+  .set-select{ background:#1a1a1d; color:#d4d4d8; border:1px solid #33333a; border-radius:8px; font-size:11px; padding:5px 6px; outline:none; width:100%; }
+  .set-select:focus{ border-color:#f5c07a; }
+  .edge-row{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:#9b9ba3; cursor:pointer; }
+  .edge-row input{ accent-color:#f5c07a; }
+  .edge-thumb{ height:30px; width:auto; margin-left:auto; border-radius:4px; border:1px solid #33333a; background:#fff; }
+  .prompt-title{ color:#e5e5e5; font-weight:600; margin-bottom:4px; }
+  .prompt-section{ color:#8b8b93; margin-top:8px; }
+  .prompt-lever{ border-left:2px solid var(--frag-color); padding-left:8px; margin-top:3px; color:#c4c4cb; }
+
+  #apiKeyModal{ position:fixed; inset:0; z-index:110; display:flex; align-items:center; justify-content:center; }
+  #apiKeyModal.hidden{ display:none; }
+  #apiKeyModalBackdrop{ position:absolute; inset:0; background:rgba(6,6,7,.68); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+  #apiKeyModalCard{
+    position:relative; z-index:1; width:min(460px, 90vw);
+    background:rgba(24,24,27,.94);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:20px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6);
+    padding:22px;
+    animation: fadeInUp .3s cubic-bezier(.22,1,.36,1);
+  }
+
+  html, body{ height:100%; width:100%; overflow:hidden; margin:0; }
+  .flex{ display:flex; }
+  .flex-col{ flex-direction:column; }
+  .flex-wrap{ flex-wrap:wrap; }
+  .flex-1{ flex:1 1 0%; }
+  .grid{ display:grid; }
+  .grid-cols-2{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .hidden{ display:none !important; }
+  .relative{ position:relative; }
+  .absolute{ position:absolute; }
+  .fixed{ position:fixed; }
+  .inset-0{ top:0; right:0; bottom:0; left:0; }
+  .items-center{ align-items:center; }
+  .justify-center{ justify-content:center; }
+  .justify-between{ justify-content:space-between; }
+  .overflow-hidden{ overflow:hidden; }
+  .overflow-y-auto{ overflow-y:auto; }
+  .w-full{ width:100%; }
+  .h-full{ height:100%; }
+  #graphPanel{ height:66%; width:100%; }
+  #dockBar{ height:34%; width:100%; }
+</style>
+</head>
+<body class="h-screen w-screen overflow-hidden text-[#f2efe9]">
+
+<div class="flex flex-col h-full w-full">
+
+  <!-- TOP: 2D RELATIONSHIP GRAPH -->
+  <div id="graphPanel" class="relative overflow-hidden" style="background:radial-gradient(circle at 50% 42%, #16161a 0%, #0b0b0d 70%);">
+
+    <div class="absolute top-6 left-7 z-40 select-none pointer-events-none max-w-[420px]">
+      <div class="text-[11px] tracking-[0.25em] text-gray-500 font-display">MONTPELLIER COURTYARD</div>
+      <h1 class="font-display text-xl font-semibold text-[#f2efe9] mt-1">Pavilion Prompt Studio</h1>
+      <p class="text-[12px] text-gray-500 mt-1">노드 호버로 미리보기 · 클릭으로 선택 · 점선은 서로 어울리는 조합</p>
+      <div class="flex items-center gap-1.5 flex-wrap mt-2.5 pointer-events-auto">
+        <span class="text-[10px] text-gray-600">🔒 레퍼런스 이미지로 고정됨 (변경 불가):</span>
+        <span class="locked-chip">설계 의도</span>
+        <span class="locked-chip">구조 · 재료</span>
+        <span class="locked-chip">구도</span>
+        <span class="locked-chip">배경</span>
+      </div>
+    </div>
+
+    <div class="absolute top-6 right-7 z-40 flex flex-col gap-2 items-end">
+      <button id="apiKeyBtn" class="text-[11px] px-3 py-1.5 rounded-full border border-white/10 text-gray-400 hover:text-white hover:border-white/30 pointer-events-auto" style="backdrop-filter:blur(10px); background:rgba(255,255,255,.04);">🔑 API Key 설정</button>
+      <div id="legend" class="flex flex-col gap-1.5 items-end"></div>
+    </div>
+
+    <svg id="graphLines"></svg>
+    <div id="graphField" class="absolute inset-0 w-full h-full"></div>
+
+    <div id="imgPopover">
+      <div id="imgSwatch" class="w-full"></div>
+      <div class="px-3 py-2.5">
+        <div id="imgPopoverCat" class="text-[10px] tracking-wider text-gray-500 uppercase"></div>
+        <div id="imgPopoverLabel" class="text-[13px] text-[#f2efe9] font-medium mt-0.5"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM: FLOATING DOCK -->
+  <div id="dockBar" class="relative flex items-stretch gap-5 px-7 py-4">
+
+    <!-- LEFT: 3 reference image slots (draft / site photo / style reference) -->
+    <div class="flex-shrink-0 flex flex-col" style="width:340px;">
+      <div class="text-[10px] tracking-[0.2em] text-gray-500 mb-1.5 font-display">REFERENCE IMAGES</div>
+      <div id="slotsWrap" class="flex-1 flex gap-2 min-h-0"></div>
+    </div>
+
+    <!-- CENTER: chips + assembled prompt -->
+    <div class="flex-1 flex flex-col min-w-0 gap-1.5">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] tracking-[0.2em] text-gray-500 font-display">SELECTED</span>
+        <button id="resetBtn" class="text-[10px] text-gray-500 hover:text-gray-300 underline underline-offset-2">전체 초기화</button>
+      </div>
+      <div id="chips" class="flex flex-wrap gap-1.5 overflow-y-auto" style="max-height:34px;"></div>
+      <div id="promptBox" class="flex-1 min-h-0 overflow-y-auto rounded-lg border border-[#2a2a2e] bg-black/25 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-gray-300 font-mono"></div>
+    </div>
+
+    <!-- RIGHT: actions -->
+    <div class="flex-shrink-0 flex flex-col justify-center gap-2" style="width:200px;">
+      <div class="flex items-center gap-2">
+        <button id="copyBtn" class="flex-1 text-[12px] px-3 py-2 rounded-lg border border-[#33333a] text-gray-200 hover:border-[#555] hover:text-white font-display font-medium">Copy Prompt</button>
+        <span id="copiedTag" class="hidden text-[10px] text-emerald-400 whitespace-nowrap"></span>
+      </div>
+      <button id="generateBtn" class="py-2.5 rounded-lg font-display text-[13px] font-medium text-[#0b0b0d] bg-gradient-to-r from-[#f5c07a] to-[#d9a066] hover:opacity-90 transition-opacity">Generate Mock Result</button>
+      <div id="progressWrap" class="hidden h-1.5 rounded-full bg-[#1c1c20] overflow-hidden">
+        <div id="progressBar" class="h-full progress-stripes" style="width:0%; background-color:#d9a066;"></div>
+      </div>
+      <div class="grid grid-cols-2 gap-1.5">
+        <select id="modelSelect" class="set-select" title="이미지 모델"></select>
+        <select id="sizeSelect" class="set-select" title="해상도"></select>
+      </div>
+      <label class="edge-row" title="초안에서 윤곽선 이미지를 자동으로 만들어, 형태·위치·구도를 따라 그리도록 함께 보냅니다">
+        <input id="edgeToggle" type="checkbox" />
+        <span>구조 가이드(엣지맵) 첨부</span>
+        <img id="edgeThumb" class="edge-thumb hidden" alt="" />
+      </label>
+    </div>
+  </div>
+</div>
+
+<!-- API KEY MODAL -->
+<div id="apiKeyModal" class="hidden">
+  <div id="apiKeyModalBackdrop"></div>
+  <div id="apiKeyModalCard">
+    <div class="text-[10px] tracking-[0.2em] text-gray-500 font-display">GEMINI API KEY</div>
+    <div class="font-display text-[15px] font-semibold text-[#f2efe9] mt-0.5 mb-3">이미지 생성용 API 키 설정</div>
+    <input id="apiKeyInput" type="password" autocomplete="off" spellcheck="false" placeholder="AIza..." class="w-full rounded-lg border border-[#33333a] bg-black/30 px-3 py-2.5 text-[13px] text-gray-200 font-mono outline-none focus:border-[#f5c07a]" />
+    <p class="text-[11px] text-gray-500 mt-2 leading-relaxed">Google AI Studio에서 발급한 키를 붙여넣으세요. 이 브라우저에만 저장되고 파일이나 서버로는 전송되지 않아요. 비우고 저장하면 삭제됩니다.</p>
+    <p id="apiKeyNote" class="text-[11px] text-amber-300 mt-1.5 min-h-[14px]"></p>
+    <div class="flex items-center justify-between mt-3">
+      <button id="apiKeyClear" class="text-[11px] text-gray-500 hover:text-gray-300 underline underline-offset-2">키 삭제</button>
+      <div class="flex items-center gap-2">
+        <button id="apiKeyCancel" class="text-[12px] px-3 py-1.5 rounded-lg border border-[#33333a] text-gray-300 hover:text-white">취소</button>
+        <button id="apiKeySave" class="text-[12px] px-4 py-1.5 rounded-lg font-display font-medium text-[#0b0b0d] bg-gradient-to-r from-[#f5c07a] to-[#d9a066]">저장</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RESULT MODAL -->
+<div id="resultModal" class="hidden">
+  <div id="resultModalBackdrop"></div>
+  <div id="resultModalCard">
+    <div class="flex items-center justify-between mb-4">
+      <div>
+        <div class="text-[10px] tracking-[0.2em] text-gray-500 font-display">RESULT</div>
+        <div class="font-display text-[15px] font-semibold text-[#f2efe9] mt-0.5 flex items-center gap-2">Before / After <span id="resultModeBadge" class="text-[10px] font-normal px-2 py-0.5 rounded-full border border-white/10 text-gray-400"></span></div>
+      </div>
+      <button id="resultModalClose" class="w-8 h-8 rounded-full border border-[#33333a] text-gray-400 hover:text-white hover:border-[#555] flex items-center justify-center">✕</button>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <div class="text-[10px] text-gray-500 mb-1.5 tracking-wide">DRAFT (구조 · 위치 · 구도 유지)</div>
+        <div class="ratio-box rounded-xl overflow-hidden border border-[#2a2a2e]" id="resultBefore"></div>
+      </div>
+      <div>
+        <div class="text-[10px] text-gray-500 mb-1.5 tracking-wide">STYLED</div>
+        <div class="ratio-box rounded-xl overflow-hidden border border-[#2a2a2e] flex items-center justify-center" id="resultAfter">
+          <span class="text-[11px] text-gray-600 px-3 text-center">Generate를 누르면<br/>결과가 나타나요</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  // real reference photos (Unsplash CDN, hotlinked) — gradient is kept as an
+  // instant-paint placeholder / fallback if a photo fails to load
+  function unsplash(id){ return `https://images.unsplash.com/photo-${id}?w=480&h=360&fit=crop&q=75&auto=format`; }
+
+  // Only the levers that a retouch pass can actually change. Shape, position and
+  // composition come from the uploaded reference and are intentionally not
+  // editable here (see the "고정됨" chips in the header) — they used to be
+  // separate selectable categories, but that implied a user could ask the tool
+  // to change them, which contradicts the whole "preserve structure" premise.
+  const CATEGORIES = [
+    { id:'lighting', labelEn:'Lighting', labelKo:'조명', color:'#fbbf24',
+      options:[
+        {id:'light-golden',    label:'Golden hour',       prompt:'golden hour warm light',   gradient:['#f59e0b','#fde68a'], image:unsplash('1696470553784-4f28d59b305d')},
+        {id:'light-overcast',  label:'Overcast diffuse',  prompt:'overcast diffuse light',   gradient:['#94a3b8','#e2e8f0'], image:unsplash('1645537255494-c6413186f8a0')},
+        {id:'light-backlight', label:'Dramatic backlight',prompt:'dramatic backlight',       gradient:['#312e81','#818cf8'], image:unsplash('1765892839055-142827f49ca5')},
+        {id:'light-midday',    label:'Harsh midday sun',  prompt:'harsh midday sun',         gradient:['#eab308','#fef08a'], image:unsplash('1622033786644-1ae186949084')},
+      ]},
+    { id:'atmosphere', labelEn:'Atmosphere', labelKo:'분위기 · 톤', color:'#fb923c',
+      options:[
+        {id:'atmo-beige',     label:'Warm beige tone',     prompt:'warm beige tone',             gradient:['#b45309','#fde68a'], image:unsplash('1646600950096-0489e2a461cc')},
+        {id:'atmo-turquoise', label:'Cool turquoise tone', prompt:'cool turquoise tone',         gradient:['#0e7490','#67e8f9'], image:unsplash('1681228777788-8cf62e064b32')},
+        {id:'atmo-charcoal',  label:'Deep charcoal accent',prompt:'deep charcoal accent',        gradient:['#292524','#78716c'], image:unsplash('1533719791354-582f7a7e136e')},
+        {id:'atmo-serene',    label:'Serene and calm',     prompt:'serene and calm',             gradient:['#134e4a','#5eead4'], image:unsplash('1622396481322-3b83d186701b')},
+        {id:'atmo-vibrant',   label:'Vibrant and social',  prompt:'vibrant and social',          gradient:['#9d174d','#f472b6'], image:unsplash('1771385213738-1451577201a7')},
+      ]},
+    { id:'style', labelEn:'Style', labelKo:'렌더링 무드', color:'#f0abfc',
+      options:[
+        {id:'style-photo',       label:'Photorealistic',      prompt:'photorealistic architectural rendering', gradient:['#334155','#94a3b8'], image:unsplash('1782397088210-4f7186894a60')},
+        {id:'style-watercolor',  label:'Soft watercolor',     prompt:'soft watercolor rendering',              gradient:['#a855f7','#e9d5ff'], image:unsplash('1776286287672-bc6d1c0bbd32')},
+        {id:'style-cinematic',   label:'Cinematic dramatic',  prompt:'cinematic dramatic render',              gradient:['#1e293b','#7dd3fc'], image:unsplash('1531591022136-eb8b0da1e6d0')},
+        {id:'style-lineart',     label:'Minimalist line-art', prompt:'minimalist line-art render',             gradient:['#44403c','#e7e5e4'], image:unsplash('1492714673295-07efb43ddaf8')},
+      ]},
+  ];
+
+  // section order in the assembled prompt
+  const LEVER_ORDER = ['lighting','atmosphere','style'];
+  const SECTION_TITLES = { lighting:'[Lighting]', atmosphere:'[Atmosphere]', style:'[Style]' };
+
+  // A 3-word fragment leaves the model too much room to reinterpret, so every
+  // option expands into a full descriptive sentence (light direction, shadow
+  // behaviour, palette, material rendering) when the prompt is assembled.
+  const OPTION_DETAILS = {
+    'light-golden':    'Low-angle, warm amber golden-hour sunlight raking across the scene from the side. Long, soft-edged shadows fall across the ground and walls; highlights glow honey-gold on pale stone, fabric and mesh, while the shadows stay warm and gently lifted.',
+    'light-overcast':  'Soft, even daylight under a uniformly bright overcast sky. Shadows are faint and feather-edged with no harsh contrast, so surface textures read clearly with gentle, low-contrast modeling.',
+    'light-backlight': 'Strong sun placed behind and above the structure, producing luminous rim light along its edges, a translucent glow through thin fabric or mesh, and deep, high-contrast shadows falling toward the camera.',
+    'light-midday':    'High overhead midday sun with crisp, hard-edged short shadows and strong highlight-to-shadow contrast. The structure casts sharp geometric shadow patterns onto the ground beneath it, under a clear, saturated sky.',
+    'atmo-beige':      'A palette of warm neutrals — sand, cream and aged-stone beige — with soft amber accents. Avoid any cool or blue cast in the shadows, walls or ground.',
+    'atmo-turquoise':  'A cool, fresh palette with subtle turquoise and teal undertones in the shadows and sky reflections, balanced against neutral stone so that all materials stay believable.',
+    'atmo-charcoal':   'Deep charcoal and near-black accents in the shadow areas and structural details, adding weight and contrast against the lighter surfaces without crushing detail.',
+    'atmo-serene':     'A quiet, still, contemplative mood: soft tonal transitions, restrained contrast, nothing busy or cluttered, a gentle stillness in the air.',
+    'atmo-vibrant':    'A lively, inviting mood with richer color saturation and a feeling of warmth and life, as a place where people would want to gather. Do not add new objects or people.',
+    'style-photo':     'A photorealistic finish with a clean, detailed, high-resolution look. Give the existing surfaces real material texture and a natural response to light — the grain of stone, the weave of fabric or mesh, sand and wood clearly resolved — with a natural color grade. This changes surface finish only, never the geometry or the framing.',
+    'style-watercolor':'An architectural watercolor illustration with translucent washes, soft pigment blooms and delicate pencil linework, keeping every form and proportion exactly as in the reference.',
+    'style-cinematic': 'A filmic look with a strong tonal range, subtle atmospheric depth and a cohesive graded color palette, like a still from a feature film.',
+    'style-lineart':   'A clean architectural line drawing with fine, consistent linework, minimal flat tonal fills and generous white space, keeping every form exactly in place.',
+  };
+
+  // curated "goes well together" pairings across categories, drawn as dashed
+  // curved links distinct from the plain parent→child lines
+  const CROSS_LINKS = [
+    ['light-golden','atmo-beige'], ['light-golden','style-photo'],
+    ['atmo-beige','style-watercolor'],
+    ['atmo-turquoise','light-overcast'],
+    ['style-lineart','atmo-charcoal'], ['style-lineart','light-overcast'],
+    ['atmo-vibrant','light-backlight'], ['atmo-vibrant','style-cinematic'],
+    ['atmo-charcoal','light-backlight'], ['style-cinematic','light-backlight'],
+    ['atmo-serene','light-overcast'],
+  ];
+
+  const W = 1100, H = 680, CX = 550, CY = 340, R1 = 175, CHILD_R = 150, FAN = 130;
+
+  function polar(cx,cy,r,deg){ const rad = deg*Math.PI/180; return {x:cx+r*Math.cos(rad), y:cy+r*Math.sin(rad)}; }
+  function clamp(v,min,max){ return Math.min(max, Math.max(min, v)); }
+  function pct(v, total){ return (v/total*100).toFixed(2) + '%'; }
+
+  CATEGORIES.forEach((cat, i) => {
+    // offset so no category sits exactly on the top/bottom pole, which is
+    // where the canvas has the least vertical room for its fanned-out children
+    const angle = -150 + i * (360/CATEGORIES.length);
+    cat.pos = polar(CX, CY, R1, angle);
+    const n = cat.options.length;
+    cat.options.forEach((opt, j) => {
+      const offset = n > 1 ? (-FAN/2 + j*(FAN/(n-1))) : 0;
+      const raw = polar(cat.pos.x, cat.pos.y, CHILD_R, angle + offset);
+      opt.pos = { x: clamp(raw.x, 65, W-65), y: clamp(raw.y, 45, H-45) };
+    });
+  });
+
+  const optionIndex = {}; // optId -> {opt, cat}
+  CATEGORIES.forEach(cat => cat.options.forEach(opt => { optionIndex[opt.id] = {opt, cat}; }));
+
+  const selected = {}; // catId -> array of option objects
+  let uploadedImageData = null;
+  let uploadedRatio = null;   // exact width/height of the uploaded reference
+  let uploadedAspect = null;  // nearest aspect ratio label the image API accepts
+
+  const ASPECT_CHOICES = [
+    {label:'1:1', r:1}, {label:'3:4', r:3/4}, {label:'9:16', r:9/16}, {label:'4:3', r:4/3}, {label:'16:9', r:16/9},
+  ];
+  function snapAspect(r){
+    let best = ASPECT_CHOICES[0], bestD = Infinity;
+    ASPECT_CHOICES.forEach(c => {
+      const d = Math.abs(Math.log(r / c.r));
+      if(d < bestD){ bestD = d; best = c; }
+    });
+    return best.label;
+  }
+  function measureImage(src){
+    return new Promise(resolve => {
+      const im = new Image();
+      im.onload = () => resolve({w: im.naturalWidth, h: im.naturalHeight});
+      im.onerror = () => resolve(null);
+      im.src = src;
+    });
+  }
+  function setPanelRatio(el, r){ el.style.setProperty('--r', String(r || 1.5)); }
+
+  // ---------- Gemini image generation (optional, real image output) ----------
+  const GEMINI_KEY_STORAGE = 'pavilionStudio.geminiApiKey';
+  const SETTINGS_STORAGE = 'pavilionStudio.imageSettings';
+  const MODEL_OPTIONS = [
+    {id:'gemini-3.1-flash-image', label:'Flash · 빠름'},
+    {id:'gemini-3-pro-image',     label:'Pro · 고품질'},
+  ];
+  const SIZE_OPTIONS = ['1K','2K','4K'];
+  const imageSettings = { model:MODEL_OPTIONS[0].id, size:'2K', edge:true };
+  try{
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_STORAGE) || 'null');
+    if(saved && MODEL_OPTIONS.some(m => m.id === saved.model)) imageSettings.model = saved.model;
+    if(saved && SIZE_OPTIONS.includes(saved.size)) imageSettings.size = saved.size;
+    if(saved && typeof saved.edge === 'boolean') imageSettings.edge = saved.edge;
+  }catch(e){}
+  function saveImageSettings(){ try{ localStorage.setItem(SETTINGS_STORAGE, JSON.stringify(imageSettings)); }catch(e){} }
+
+  const modelSelect = document.getElementById('modelSelect');
+  const sizeSelect = document.getElementById('sizeSelect');
+  modelSelect.innerHTML = MODEL_OPTIONS.map(m => `<option value="${m.id}">${m.label}</option>`).join('');
+  sizeSelect.innerHTML = SIZE_OPTIONS.map(s => `<option value="${s}">${s}</option>`).join('');
+  modelSelect.value = imageSettings.model;
+  sizeSelect.value = imageSettings.size;
+  modelSelect.addEventListener('change', () => { imageSettings.model = modelSelect.value; saveImageSettings(); });
+  sizeSelect.addEventListener('change', () => { imageSettings.size = sizeSelect.value; saveImageSettings(); });
+  const edgeToggle = document.getElementById('edgeToggle');
+  edgeToggle.checked = imageSettings.edge;
+  edgeToggle.addEventListener('change', () => {
+    imageSettings.edge = edgeToggle.checked;
+    saveImageSettings();
+    updateSlotBadges();
+    updatePrompt();
+  });
+
+  // very large photos (e.g. 12MP phone shots) can blow past the inline-request size
+  // limit once three of them are base64-encoded, so anything over 2048px is downscaled first
+  async function prepareForApi(dataUrl, maxSide = 2048){
+    const dims = await measureImage(dataUrl);
+    if(!dims || Math.max(dims.w, dims.h) <= maxSide) return dataUrl;
+    const k = maxSide / Math.max(dims.w, dims.h);
+    const im = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = dataUrl; });
+    if(!im) return dataUrl;
+    const c = document.createElement('canvas');
+    c.width = Math.round(dims.w * k); c.height = Math.round(dims.h * k);
+    c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.92);
+  }
+
+  // ---------- structure guide: edge map of the draft ----------
+  // Washed-out renders hide their structure in a very narrow tonal band, so the guide
+  // combines global equalisation with local contrast normalisation before edge
+  // detection, then drops short fragments (paving / plaster texture) and keeps long lines.
+  function edgeStrongest(values, w, h, keepFraction){
+    const N = w*h;
+    const blur = new Float32Array(N);
+    for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+      const i = y*w+x;
+      blur[i] = (values[i-w-1] + 2*values[i-w] + values[i-w+1] + 2*values[i-1] + 4*values[i] + 2*values[i+1] + values[i+w-1] + 2*values[i+w] + values[i+w+1]) / 16;
+    }
+    const mag = new Float32Array(N); let maxMag = 0;
+    for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+      const i = y*w+x;
+      const gx = -blur[i-w-1] - 2*blur[i-1] - blur[i+w-1] + blur[i-w+1] + 2*blur[i+1] + blur[i+w+1];
+      const gy = -blur[i-w-1] - 2*blur[i-w] - blur[i-w+1] + blur[i+w-1] + 2*blur[i+w] + blur[i+w+1];
+      const m = Math.hypot(gx, gy); mag[i] = m; if(m > maxMag) maxMag = m;
+    }
+    const BINS = 1024, mh = new Uint32Array(BINS);
+    for(let i=0;i<N;i++) mh[Math.min(BINS-1, (mag[i]/(maxMag||1)*(BINS-1))|0)]++;
+    let cum = 0, thrBin = BINS-1; const target = N * keepFraction;
+    for(let b=BINS-1;b>=0;b--){ cum += mh[b]; if(cum >= target){ thrBin = b; break; } }
+    const thr = thrBin / (BINS-1) * maxMag;
+    const edge = new Uint8Array(N);
+    for(let i=0;i<N;i++) edge[i] = mag[i] >= thr ? 1 : 0;
+    return edge;
+  }
+
+  function edgeMapFromCanvas(srcCanvas){
+    const w = srcCanvas.width, h = srcCanvas.height, N = w*h;
+    const src = srcCanvas.getContext('2d').getImageData(0,0,w,h).data;
+    const gray = new Float32Array(N);
+    for(let i=0;i<N;i++) gray[i] = 0.299*src[i*4] + 0.587*src[i*4+1] + 0.114*src[i*4+2];
+
+    const hist = new Uint32Array(256);
+    for(let i=0;i<N;i++) hist[gray[i]|0]++;
+    const cdf = new Float32Array(256); let acc = 0, cdfMin = -1;
+    for(let v=0;v<256;v++){ acc += hist[v]; cdf[v] = acc; if(cdfMin < 0 && hist[v] > 0) cdfMin = acc; }
+    const eq = new Float32Array(N);
+    for(let i=0;i<N;i++) eq[i] = (cdf[gray[i]|0] - cdfMin) / Math.max(1, N - cdfMin) * 255;
+
+    const R = Math.max(8, Math.round(Math.min(w,h) * 0.02)), W1 = w+1;
+    const S = new Float64Array(W1*(h+1)), S2 = new Float64Array(W1*(h+1));
+    for(let y=0;y<h;y++){
+      let rs = 0, rs2 = 0;
+      for(let x=0;x<w;x++){
+        const g = gray[y*w+x]; rs += g; rs2 += g*g;
+        S[(y+1)*W1 + x+1] = S[y*W1 + x+1] + rs;
+        S2[(y+1)*W1 + x+1] = S2[y*W1 + x+1] + rs2;
+      }
+    }
+    const norm = new Float32Array(N);
+    for(let y=0;y<h;y++){
+      const y0 = Math.max(0,y-R), y1 = Math.min(h,y+R+1);
+      for(let x=0;x<w;x++){
+        const x0 = Math.max(0,x-R), x1 = Math.min(w,x+R+1);
+        const cnt = (y1-y0)*(x1-x0);
+        const sum = S[y1*W1+x1] - S[y0*W1+x1] - S[y1*W1+x0] + S[y0*W1+x0];
+        const sum2 = S2[y1*W1+x1] - S2[y0*W1+x1] - S2[y1*W1+x0] + S2[y0*W1+x0];
+        const mean = sum/cnt, variance = Math.max(0, sum2/cnt - mean*mean);
+        norm[y*w+x] = (gray[y*w+x] - mean) / (Math.sqrt(variance) + 6) * 40;
+      }
+    }
+
+    const eA = edgeStrongest(eq, w, h, 0.06);
+    const eB = edgeStrongest(norm, w, h, 0.04);
+    const edge = new Uint8Array(N);
+    for(let i=0;i<N;i++) edge[i] = (eA[i] || eB[i]) ? 1 : 0;
+
+    const minComp = Math.max(40, Math.round(N * 0.00018));
+    const seen = new Uint8Array(N), stack = new Int32Array(N);
+    for(let i=0;i<N;i++){
+      if(!edge[i] || seen[i]) continue;
+      let sp = 0; const members = [];
+      stack[sp++] = i; seen[i] = 1;
+      while(sp){
+        const p = stack[--sp]; members.push(p);
+        const px = p % w, py = (p / w) | 0;
+        for(let dy=-1; dy<=1; dy++) for(let dx=-1; dx<=1; dx++){
+          const xx = px+dx, yy = py+dy;
+          if(xx<0||yy<0||xx>=w||yy>=h) continue;
+          const q = yy*w+xx;
+          if(edge[q] && !seen[q]){ seen[q] = 1; stack[sp++] = q; }
+        }
+      }
+      if(members.length < minComp) for(const p of members) edge[p] = 0;
+    }
+
+    const out = document.createElement('canvas'); out.width = w; out.height = h;
+    const octx = out.getContext('2d'); const id = octx.createImageData(w,h);
+    for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+      let on = 0;
+      for(let dy=-1; dy<=1 && !on; dy++) for(let dx=-1; dx<=1; dx++){
+        const yy=y+dy, xx=x+dx;
+        if(yy>=0 && yy<h && xx>=0 && xx<w && edge[yy*w+xx]){ on = 1; break; }
+      }
+      const v = on ? 20 : 255, o = (y*w+x)*4;
+      id.data[o]=v; id.data[o+1]=v; id.data[o+2]=v; id.data[o+3]=255;
+    }
+    octx.putImageData(id,0,0);
+    return out;
+  }
+
+  async function makeEdgeMap(dataUrl, maxSide = 1024){
+    const im = await new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = dataUrl; });
+    if(!im) return null;
+    const k = Math.min(1, maxSide / Math.max(im.naturalWidth, im.naturalHeight));
+    const c = document.createElement('canvas');
+    c.width = Math.max(8, Math.round(im.naturalWidth * k)); c.height = Math.max(8, Math.round(im.naturalHeight * k));
+    c.getContext('2d', {willReadFrequently:true}).drawImage(im, 0, 0, c.width, c.height);
+    return edgeMapFromCanvas(c).toDataURL('image/png');
+  }
+
+  let edgeMapDataUrl = null;   // structure guide generated from the draft slot
+  let edgePending = null;      // promise while it is being computed
+  function refreshEdgeMap(){
+    const d = slotData.draft;
+    edgeMapDataUrl = null;
+    edgePending = null;
+    paintEdgeThumb();
+    if(!d) return;
+    const mine = makeEdgeMap(d.dataUrl).then(url => {
+      if(edgePending !== mine) return;      // draft changed meanwhile
+      edgeMapDataUrl = url;
+      edgePending = null;
+      paintEdgeThumb();
+      updateSlotBadges();
+      updatePrompt();
+    }).catch(() => { if(edgePending === mine){ edgePending = null; } });
+    edgePending = mine;
+  }
+  function paintEdgeThumb(){
+    const t = document.getElementById('edgeThumb');
+    if(edgeMapDataUrl){ t.src = edgeMapDataUrl; t.classList.remove('hidden'); } else { t.classList.add('hidden'); }
+  }
+
+  // localStorage can be unavailable (sandboxed previews, blocked storage), so the
+  // key also lives in memory for the current session; setApiKey reports whether it persisted
+  let memoryApiKey = '';
+  function getApiKey(){
+    try { return localStorage.getItem(GEMINI_KEY_STORAGE) || memoryApiKey; } catch(e){ return memoryApiKey; }
+  }
+  function setApiKey(k){
+    memoryApiKey = k;
+    try {
+      if(k) localStorage.setItem(GEMINI_KEY_STORAGE, k); else localStorage.removeItem(GEMINI_KEY_STORAGE);
+      return true;
+    } catch(e){ return false; }
+  }
+
+  function splitDataUrl(dataUrl){
+    const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl || '');
+    return m ? {mime:m[1], data:m[2]} : null;
+  }
+
+  // images: [{caption, dataUrl}] in the same order the prompt numbers them (Image 1, 2, 3)
+  async function callGeminiImageEdit({promptText, images, apiKey, aspect, model, imageSize}){
+    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+    const parts = [];
+    for(const im of images){
+      const ready = await prepareForApi(im.dataUrl);
+      const sp = splitDataUrl(ready);
+      if(!sp) throw new Error('업로드된 이미지를 읽을 수 없어요');
+      parts.push({text: im.caption});
+      parts.push({inline_data: {mime_type: sp.mime, data: sp.data}});
+    }
+    // the model sometimes ignores imageConfig, so the aspect ratio is also stated in the prompt
+    parts.push({text: aspect
+      ? `${promptText}\n\nKeep the output image at exactly ${aspect} aspect ratio, matching Image 1, with no cropping or extending of the frame.`
+      : promptText});
+    const imageConfig = {};
+    if(aspect) imageConfig.aspectRatio = aspect;
+    if(imageSize) imageConfig.imageSize = imageSize;
+    const body = {
+      contents: [{ parts }],
+      generationConfig: { responseModalities: ['TEXT','IMAGE'], imageConfig }
+    };
+    let res;
+    try{
+      res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    }catch(networkErr){
+      throw new Error('네트워크/CORS 오류로 호출 실패');
+    }
+    if(!res.ok){
+      let msg = `HTTP ${res.status}`;
+      try{ const errJson = await res.json(); if(errJson.error && errJson.error.message) msg = errJson.error.message; }catch(e){}
+      throw new Error(msg);
+    }
+    const data = await res.json();
+    const respParts = (data && data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+    const imgPart = respParts.find(p => p.inline_data || p.inlineData);
+    if(!imgPart) throw new Error('응답에 이미지가 없어요');
+    const inline = imgPart.inline_data || imgPart.inlineData;
+    const mime = inline.mime_type || inline.mimeType || 'image/png';
+    return `data:${mime};base64,${inline.data}`;
+  }
+
+  function apiKeyReady(){ return !!getApiKey(); }
+  function updateApiKeyBadge(){
+    const btn = document.getElementById('apiKeyBtn');
+    const has = apiKeyReady();
+    btn.textContent = has ? '🔑 API Key 연결됨' : '🔑 API Key 설정';
+    btn.classList.toggle('text-emerald-400', has);
+    updateGenerateButtonLabel();
+  }
+  const apiKeyModal = document.getElementById('apiKeyModal');
+  const apiKeyInput = document.getElementById('apiKeyInput');
+  const apiKeyNote = document.getElementById('apiKeyNote');
+  function openApiKeyModal(){
+    apiKeyInput.value = getApiKey();
+    apiKeyNote.textContent = '';
+    apiKeyModal.classList.remove('hidden');
+    setTimeout(() => apiKeyInput.focus(), 30);
+  }
+  function closeApiKeyModal(){ apiKeyModal.classList.add('hidden'); }
+  function saveApiKeyFromModal(){
+    const persisted = setApiKey(apiKeyInput.value.trim());
+    updateApiKeyBadge();
+    if(apiKeyInput.value.trim() && !persisted){
+      apiKeyNote.textContent = '이 환경에서는 브라우저 저장이 막혀 있어서, 새로고침하면 키가 사라져요. (이번 세션에는 적용됨)';
+      setTimeout(closeApiKeyModal, 1800);
+    } else {
+      closeApiKeyModal();
+    }
+  }
+  document.getElementById('apiKeyBtn').addEventListener('click', openApiKeyModal);
+  document.getElementById('apiKeySave').addEventListener('click', saveApiKeyFromModal);
+  document.getElementById('apiKeyClear').addEventListener('click', () => { apiKeyInput.value = ''; saveApiKeyFromModal(); });
+  document.getElementById('apiKeyCancel').addEventListener('click', closeApiKeyModal);
+  document.getElementById('apiKeyModalBackdrop').addEventListener('click', closeApiKeyModal);
+  apiKeyInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') saveApiKeyFromModal(); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeApiKeyModal(); });
+
+  function categoryById(id){ return CATEGORIES.find(c => c.id === id); }
+  function optionRefById(catId, optId){ return categoryById(catId).options.find(o => o.id === optId); }
+
+  // ---------- legend ----------
+  const legendEl = document.getElementById('legend');
+  legendEl.innerHTML = CATEGORIES.map(c => `
+    <div class="flex items-center gap-1.5 text-[10px] text-gray-400">
+      <span>${c.labelKo}</span>
+      <span class="w-2 h-2 rounded-full" style="background:${c.color}"></span>
+    </div>
+  `).join('') + `<div class="flex items-center gap-1.5 text-[10px] text-gray-600 mt-1"><span>어울리는 조합</span><span style="width:14px;height:0;border-top:1.5px dashed #f5e6c8;display:inline-block;"></span></div>`;
+
+  // ---------- graph lines (SVG) ----------
+  const svg = document.getElementById('graphLines');
+  function curvePath(x1,y1,x2,y2,bend){
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    const dx=x2-x1, dy=y2-y1;
+    const len = Math.hypot(dx,dy) || 1;
+    const nx=-dy/len, ny=dx/len;
+    const cx=mx+nx*len*bend, cy=my+ny*len*bend;
+    return `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`;
+  }
+  function renderLines(){
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.setAttribute('preserveAspectRatio','none');
+    let html = '';
+    CATEGORIES.forEach(cat => {
+      html += `<path d="${curvePath(CX,CY,cat.pos.x,cat.pos.y,0)}" fill="none" stroke="${cat.color}" stroke-width="1.6" stroke-opacity="0.3"/>`;
+      cat.options.forEach((opt,j) => {
+        html += `<path d="${curvePath(cat.pos.x,cat.pos.y,opt.pos.x,opt.pos.y, j%2?0.08:-0.08)}" fill="none" stroke="${cat.color}" stroke-width="1.2" stroke-opacity="0.22"/>`;
+      });
+    });
+    CROSS_LINKS.forEach(([aId,bId]) => {
+      const a = optionIndex[aId], b = optionIndex[bId];
+      if(!a || !b) return;
+      html += `<path d="${curvePath(a.opt.pos.x,a.opt.pos.y,b.opt.pos.x,b.opt.pos.y, 0.22)}" fill="none" stroke="#f5e6c8" stroke-width="1.3" stroke-opacity="0.4" stroke-dasharray="5 5"/>`;
+    });
+    svg.innerHTML = html;
+  }
+
+  // ---------- graph nodes ----------
+  const graphField = document.getElementById('graphField');
+  function renderNodes(){
+    let html = `<div class="hub-bubble bubble">PAVILION</div>`;
+    CATEGORIES.forEach(cat => {
+      html += `
+        <div class="cat-anchor bubble" style="left:${pct(cat.pos.x,W)}; top:${pct(cat.pos.y,H)}; color:${cat.color}; border-color:${cat.color}66;">
+          <span class="cat-dot" style="background:${cat.color}"></span>${cat.labelEn}
+        </div>`;
+      cat.options.forEach(opt => {
+        html += `
+          <button class="leaf-bubble bubble" data-opt-node data-cat="${cat.id}" data-opt="${opt.id}"
+                  style="left:${pct(opt.pos.x,W)}; top:${pct(opt.pos.y,H)}; background:#18181b; --glow:${opt.gradient[0]}aa;">
+            ${opt.label}
+          </button>`;
+      });
+    });
+    graphField.innerHTML = html;
+
+    graphField.querySelectorAll('[data-opt-node]').forEach(btn => {
+      btn.addEventListener('mouseenter', (e) => showImgPopover(e, btn.dataset.cat, btn.dataset.opt));
+      btn.addEventListener('mousemove', (e) => moveImgPopover(e));
+      btn.addEventListener('mouseleave', hideImgPopover);
+      btn.addEventListener('click', () => {
+        toggleOption(btn.dataset.cat, btn.dataset.opt);
+        btn.classList.remove('bubble-pop');
+        void btn.offsetWidth;
+        btn.classList.add('bubble-pop');
+      });
+      btn.addEventListener('animationend', (e) => { if(e.animationName === 'bubblePop') btn.classList.remove('bubble-pop'); });
+    });
+  }
+
+  function refreshSelectionVisuals(){
+    graphField.querySelectorAll('[data-opt-node]').forEach(btn => {
+      const isSel = (selected[btn.dataset.cat]||[]).some(o => o.id === btn.dataset.opt);
+      btn.classList.toggle('is-selected', isSel);
+      const cat = categoryById(btn.dataset.cat);
+      if(isSel){
+        btn.style.background = `linear-gradient(135deg, ${cat.color}40, rgba(255,255,255,0.07))`;
+        btn.style.borderColor = cat.color;
+        btn.style.color = '#fff';
+      } else {
+        btn.style.background = '#18181b';
+        btn.style.borderColor = '#2a2a2e';
+        btn.style.color = '#e5e5e5';
+      }
+    });
+  }
+
+  // ---------- mood preview popover (follows cursor) ----------
+  const imgPopover = document.getElementById('imgPopover');
+  const imgSwatch = document.getElementById('imgSwatch');
+  const imgCat = document.getElementById('imgPopoverCat');
+  const imgLabel = document.getElementById('imgPopoverLabel');
+
+  function positionPopoverAt(x, y){
+    const halfW = 110;
+    const left = clamp(x, halfW + 8, window.innerWidth - halfW - 8);
+    imgPopover.style.left = left + 'px';
+    imgPopover.style.top = y + 'px';
+    imgPopover.classList.toggle('flip-below', y < 150);
+  }
+  function showImgPopover(e, catId, optId){
+    const cat = categoryById(catId);
+    const opt = optionRefById(catId, optId);
+    imgSwatch.style.background = `linear-gradient(135deg, ${opt.gradient[0]}, ${opt.gradient[1]})`;
+    imgSwatch.innerHTML = opt.image
+      ? `<img src="${opt.image}" alt="" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.remove();">`
+      : '';
+    imgCat.textContent = cat.labelKo;
+    imgCat.style.color = cat.color;
+    imgLabel.textContent = opt.label;
+    positionPopoverAt(e.clientX, e.clientY);
+    imgPopover.classList.add('is-visible');
+  }
+  function moveImgPopover(e){
+    if(imgPopover.classList.contains('is-visible')) positionPopoverAt(e.clientX, e.clientY);
+  }
+  function hideImgPopover(){ imgPopover.classList.remove('is-visible'); }
+
+  // ---------- prompt assembly ----------
+  const promptBox = document.getElementById('promptBox');
+  // Reference images are numbered the way the prompt refers to them: the draft is
+  // always Image 1, and the site photo / style reference follow in the order filled.
+  function imageNumbers(){
+    const nums = {draft:1};
+    let n = 2;
+    ['site','ref'].forEach(id => { if(slotData[id]) nums[id] = n++; });
+    if(imageSettings.edge && edgeMapDataUrl) nums.edge = n++;
+    return nums;
+  }
+
+  // Structured like a hand-written prompt: what must be retained (with the role of
+  // each image), then one section per lever the user picked, expanded to full sentences.
+  function buildPromptBlocks(){
+    const n = imageNumbers();
+    const blocks = [];
+    blocks.push({t:'title', text:'Pavilion Re-lighting Prompt'});
+    blocks.push({t:'section', text:'[Task]'});
+    blocks.push({t:'line', text:`This is a re-lighting and re-texturing task on a fixed base image, not a redesign and not a new scene. Image ${n.draft} is the base: its geometry, layout and framing are locked. Only the light, the color grade and the surface finish may change.`});
+    blocks.push({t:'section', text:'[Core Objectives]'});
+    blocks.push({t:'line', text:`- Design (Must Retain): The pavilion in Image ${n.draft} keeps exactly the same form — the same silhouette, the same shape and number of structural parts (canopy, supports, ties), the same proportions, and the same position relative to the arch, the ground and the walls. Do not redesign, replace, simplify or add any element; follow its geometry line by line.`});
+    blocks.push({t:'line', text:`- Perspective (Must Retain): Keep the identical camera position, viewing angle, field of view and framing of Image ${n.draft}, so that every element lands at the same place in the frame. The arch, walls and ground plane keep their size and position. Do not zoom, crop, shift or reframe.`});
+    if(n.site){
+      blocks.push({t:'line', text:`- Context (Must Retain): Use the real location shown in Image ${n.site} for the actual surfaces, plants and objects of the setting, but keep the framing, layout and pavilion placement of Image ${n.draft}.`});
+    } else {
+      blocks.push({t:'line', text:`- Context (Must Retain): Keep every surrounding element of Image ${n.draft} — the arch, the building facades and windows, the paving, the rocks and the sand — in the same layout and shape. Only their lighting, color and surface texture may change; never replace them with a different building or scene.`});
+    }
+    if(n.edge){
+      blocks.push({t:'line', text:`- Structure Guide: Image ${n.edge} is an edge map extracted from Image ${n.draft}. Every line in it marks the exact position of an edge or contour in the final image; follow it precisely. (It may miss faint or translucent parts such as a pale mesh canopy — for those, follow Image ${n.draft}.)`});
+    }
+    if(n.ref){
+      blocks.push({t:'line', text:`- Color Tone (Reference): Adopt the color palette, light quality and mood of Image ${n.ref}. Take only its color tones and lighting character — do not copy its architecture, objects or composition.`});
+    }
+    LEVER_ORDER.forEach(id => {
+      const vals = selected[id];
+      if(!vals || !vals.length) return;
+      const cat = categoryById(id);
+      blocks.push({t:'section', text:SECTION_TITLES[id]});
+      vals.forEach(v => blocks.push({t:'lever', label:v.label, text:OPTION_DETAILS[v.id] || v.prompt, color:cat.color}));
+    });
+    blocks.push({t:'section', text:'[Output]'});
+    blocks.push({t:'line', text:`Return a single finished image at the same aspect ratio as Image ${n.draft}, with no text, borders or watermarks. The pavilion, arch, walls and ground must sit in exactly the same places in the frame as in Image ${n.draft}.`});
+    return blocks;
+  }
+
+  function updatePrompt(){
+    const blocks = buildPromptBlocks();
+    const anyLever = LEVER_ORDER.some(id => (selected[id]||[]).length);
+    let html = blocks.map(b => {
+      if(b.t === 'title') return `<div class="prompt-title">${b.text}</div>`;
+      if(b.t === 'section') return `<div class="prompt-section">${b.text}</div>`;
+      if(b.t === 'lever') return `<div class="prompt-lever" style="--frag-color:${b.color}"><span style="color:${b.color}">${b.label}</span> — ${b.text}</div>`;
+      return `<div class="text-gray-400">${b.text}</div>`;
+    }).join('');
+    if(!anyLever) html += `<div class="text-gray-600 mt-2"># 그래프에서 lighting · atmosphere · style을 선택하면 해당 섹션이 추가돼요.</div>`;
+    promptBox.innerHTML = html;
+  }
+
+  function plainPromptText(){
+    return buildPromptBlocks().map(b => {
+      if(b.t === 'title') return b.text;
+      if(b.t === 'section') return '\n' + b.text;
+      if(b.t === 'lever') return `- ${b.label}: ${b.text}`;
+      return b.text;
+    }).join('\n').trim();
+  }
+
+  // ---------- chips ----------
+  const chipsEl = document.getElementById('chips');
+  function renderChips(){
+    let html = '';
+    CATEGORIES.forEach(cat => {
+      (selected[cat.id]||[]).forEach(opt => {
+        html += `
+          <span class="inline-flex items-center gap-1.5 text-[10.5px] pl-2.5 pr-1.5 py-1 rounded-full border whitespace-nowrap" style="border-color:${cat.color}66; background:${cat.color}1a; color:${cat.color}">
+            ${opt.label}
+            <button data-chip-remove data-cat="${cat.id}" data-opt="${opt.id}" class="chip-x opacity-60 hover:opacity-100 leading-none">✕</button>
+          </span>
+        `;
+      });
+    });
+    chipsEl.innerHTML = html || `<span class="text-[11px] text-gray-600">아직 선택한 옵션이 없어요</span>`;
+    chipsEl.querySelectorAll('[data-chip-remove]').forEach(btn => {
+      btn.addEventListener('click', () => toggleOption(btn.dataset.cat, btn.dataset.opt));
+    });
+  }
+
+  // ---------- toggle ----------
+  function toggleOption(catId, optId){
+    selected[catId] = selected[catId] || [];
+    const idx = selected[catId].findIndex(o => o.id === optId);
+    if(idx > -1){ selected[catId].splice(idx, 1); }
+    else { selected[catId].push(optionRefById(catId, optId)); }
+    refreshSelectionVisuals();
+    renderChips();
+    updatePrompt();
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    Object.keys(selected).forEach(k => delete selected[k]);
+    refreshSelectionVisuals();
+    renderChips();
+    updatePrompt();
+  });
+
+  // ---------- copy (with legacy fallback + user-visible failure state) ----------
+  document.getElementById('copyBtn').addEventListener('click', async () => {
+    const text = plainPromptText();
+    const tag = document.getElementById('copiedTag');
+    function flashTag(msg, isError){
+      tag.textContent = msg;
+      tag.classList.toggle('text-red-400', !!isError);
+      tag.classList.toggle('text-emerald-400', !isError);
+      tag.classList.remove('hidden');
+      setTimeout(() => tag.classList.add('hidden'), 1600);
+    }
+    try{
+      if(!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('clipboard api unavailable');
+      await navigator.clipboard.writeText(text);
+      flashTag('Copied!', false);
+    }catch(e){
+      try{
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.focus(); ta.select();
+        const ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        if(!ok) throw new Error('execCommand failed');
+        flashTag('Copied!', false);
+      }catch(e2){
+        flashTag('Copy failed', true);
+      }
+    }
+  });
+
+  // ---------- reference image slots ----------
+  const SLOT_DEFS = [
+    {id:'draft', label:'초안',        hint:'형태 · 위치 · 구도', required:true, apiLabel:'the concept render — the pavilion design, position and framing to preserve'},
+    {id:'site',  label:'현장 사진',    hint:'실제 배경 · 맥락',    required:false, apiLabel:'a photo of the real site — the actual setting and background'},
+    {id:'ref',   label:'스타일 참고',  hint:'색감 · 빛',          required:false, apiLabel:'a style reference — for color palette and lighting character only'},
+  ];
+  const slotData = {}; // slotId -> {dataUrl, ratio}
+  const slotsWrap = document.getElementById('slotsWrap');
+
+  slotsWrap.innerHTML = SLOT_DEFS.map(s => `
+    <div class="slot" data-slot="${s.id}">
+      <div class="slot-label"><span>${s.label}${s.required ? ' <b class="slot-req">필수</b>' : ''}</span><span class="slot-badge hidden"></span></div>
+      <div class="slot-drop">
+        <div class="slot-empty">클릭 · 드래그<small>${s.hint}</small></div>
+        <img class="slot-preview hidden" alt="" />
+        <button class="slot-clear hidden" title="삭제">✕</button>
+        <input type="file" accept="image/*" class="hidden" />
+      </div>
+    </div>`).join('');
+
+  function slotEl(id){ return slotsWrap.querySelector(`[data-slot="${id}"]`); }
+
+  function paintSlot(id){
+    const el = slotEl(id);
+    const has = !!slotData[id];
+    const preview = el.querySelector('.slot-preview');
+    preview.src = has ? slotData[id].dataUrl : '';
+    preview.classList.toggle('hidden', !has);
+    el.querySelector('.slot-empty').classList.toggle('hidden', has);
+    el.querySelector('.slot-clear').classList.toggle('hidden', !has);
+  }
+
+  // the draft slot drives the result modal, the Gemini aspect ratio and the mock preview
+  function syncDraft(){
+    const d = slotData.draft;
+    uploadedImageData = d ? d.dataUrl : null;
+    uploadedRatio = d && d.ratio ? d.ratio : null;
+    uploadedAspect = uploadedRatio ? snapAspect(uploadedRatio) : null;
+    renderResultBefore();
+    resetAfterPanel();
+  }
+
+  function updateSlotBadges(){
+    const nums = imageNumbers();
+    SLOT_DEFS.forEach(s => {
+      const badge = slotEl(s.id).querySelector('.slot-badge');
+      const has = !!slotData[s.id];
+      badge.classList.toggle('hidden', !has);
+      if(has) badge.textContent = 'Image ' + nums[s.id];
+    });
+  }
+
+  function afterSlotsChanged(id){
+    if(id === 'draft'){ syncDraft(); refreshEdgeMap(); }
+    updateSlotBadges();
+    updatePrompt();
+    updateGenerateButtonLabel();
+  }
+
+  async function loadSlot(id, file){
+    if(!file || !file.type.startsWith('image/')) return;
+    const dataUrl = await new Promise(res => { const r = new FileReader(); r.onload = e => res(e.target.result); r.readAsDataURL(file); });
+    const dims = await measureImage(dataUrl);
+    slotData[id] = {dataUrl, ratio: dims ? dims.w / dims.h : null};
+    paintSlot(id);
+    afterSlotsChanged(id);
+  }
+  function clearSlot(id){
+    delete slotData[id];
+    paintSlot(id);
+    afterSlotsChanged(id);
+  }
+
+  SLOT_DEFS.forEach(s => {
+    const el = slotEl(s.id);
+    const drop = el.querySelector('.slot-drop');
+    const input = el.querySelector('input[type=file]');
+    drop.addEventListener('click', () => input.click());
+    input.addEventListener('change', (e) => { loadSlot(s.id, e.target.files[0]); input.value = ''; });
+    drop.addEventListener('dragover', (e) => { e.preventDefault(); drop.classList.add('is-over'); });
+    drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
+    drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('is-over'); loadSlot(s.id, e.dataTransfer.files[0]); });
+    el.querySelector('.slot-clear').addEventListener('click', (e) => { e.stopPropagation(); clearSlot(s.id); });
+  });
+
+  // ---------- mock render result ----------
+  function pavilionSVG({after=false, gradient=['#f59e0b','#fde68a']}={}){
+    const id = 'g' + Math.random().toString(36).slice(2,8);
+    const bg = after ? `url(#${id}bg)` : '#161618';
+    const canopyFill = after ? `url(#${id}canopy)` : 'none';
+    const stroke = after ? '#18181b' : '#9ca3af';
+    const columnFill = after ? '#3f3f46' : 'none';
+    return `
+    <svg viewBox="0 0 300 200" class="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <defs>
+        <linearGradient id="${id}bg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${gradient[1]}" stop-opacity="0.55"/>
+          <stop offset="100%" stop-color="#161618"/>
+        </linearGradient>
+        <linearGradient id="${id}canopy" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="${gradient[0]}"/>
+          <stop offset="100%" stop-color="${gradient[1]}"/>
+        </linearGradient>
+        <filter id="${id}glow" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="9" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <rect x="0" y="0" width="300" height="200" fill="${bg}"/>
+      ${after ? `<ellipse cx="150" cy="78" rx="120" ry="38" fill="${gradient[0]}" opacity="0.28" filter="url(#${id}glow)"/>` : ''}
+      <line x1="20" y1="160" x2="280" y2="160" stroke="${stroke}" stroke-width="1.5"/>
+      <rect x="55" y="90" width="8" height="70" fill="${columnFill}" stroke="${stroke}" stroke-width="1.4"/>
+      <rect x="115" y="90" width="8" height="70" fill="${columnFill}" stroke="${stroke}" stroke-width="1.4"/>
+      <rect x="175" y="90" width="8" height="70" fill="${columnFill}" stroke="${stroke}" stroke-width="1.4"/>
+      <rect x="235" y="90" width="8" height="70" fill="${columnFill}" stroke="${stroke}" stroke-width="1.4"/>
+      <polygon points="35,90 265,90 235,50 65,50" fill="${canopyFill}" stroke="${stroke}" stroke-width="1.5"/>
+      <line x1="65" y1="50" x2="35" y2="90" stroke="${stroke}" stroke-width="1" opacity="0.7"/>
+      <line x1="105" y1="50" x2="82" y2="90" stroke="${stroke}" stroke-width="1" opacity="0.55"/>
+      <line x1="145" y1="50" x2="132" y2="90" stroke="${stroke}" stroke-width="1" opacity="0.55"/>
+      <line x1="185" y1="50" x2="182" y2="90" stroke="${stroke}" stroke-width="1" opacity="0.55"/>
+      <line x1="225" y1="50" x2="230" y2="90" stroke="${stroke}" stroke-width="1" opacity="0.7"/>
+      <text x="150" y="185" text-anchor="middle" fill="${stroke}" font-size="10" font-family="Inter, sans-serif" letter-spacing="1.5">${after ? 'STYLED RESULT' : 'DRAFT MASSING'}</text>
+    </svg>`;
+  }
+
+  function getHeroGradient(){
+    for(const id of ['atmosphere','lighting','style']){
+      if(selected[id] && selected[id].length) return selected[id][0].gradient;
+    }
+    return ['#f59e0b','#fde68a'];
+  }
+
+  const resultBefore = document.getElementById('resultBefore');
+  const resultAfter = document.getElementById('resultAfter');
+
+  function renderResultBefore(){
+    if(uploadedImageData){
+      setPanelRatio(resultBefore, uploadedRatio);
+      resultBefore.innerHTML = `<img src="${uploadedImageData}" class="w-full h-full object-contain"/>`;
+    } else {
+      setPanelRatio(resultBefore, 1.5);
+      resultBefore.innerHTML = pavilionSVG({after:false});
+    }
+  }
+  function resetAfterPanel(){
+    setPanelRatio(resultAfter, uploadedRatio || 1.5);
+    resultAfter.innerHTML = `<span class="text-[11px] text-gray-600 px-3 text-center">Generate를 누르면<br/>결과가 나타나요</span>`;
+    resultAfter.classList.add('flex','items-center','justify-center');
+  }
+
+  // ---------- result modal ----------
+  const resultModal = document.getElementById('resultModal');
+  function openResultModal(){ resultModal.classList.remove('hidden'); }
+  function closeResultModal(){ resultModal.classList.add('hidden'); }
+  document.getElementById('resultModalClose').addEventListener('click', closeResultModal);
+  document.getElementById('resultModalBackdrop').addEventListener('click', closeResultModal);
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape') closeResultModal(); });
+
+  const generateBtn = document.getElementById('generateBtn');
+  const progressWrap = document.getElementById('progressWrap');
+  const progressBar = document.getElementById('progressBar');
+  const resultModeBadge = document.getElementById('resultModeBadge');
+
+  function canUseRealGeneration(){ return apiKeyReady() && !!uploadedImageData; }
+  function updateGenerateButtonLabel(){
+    if(!generateBtn.disabled){
+      generateBtn.textContent = canUseRealGeneration() ? 'Generate Result (AI)' : 'Generate Mock Result';
+    }
+  }
+
+  function renderMockAfter(){
+    const grad = getHeroGradient();
+    setPanelRatio(resultAfter, uploadedRatio || 1.5);
+    resultAfter.classList.remove('flex','items-center','justify-center');
+    if(uploadedImageData){
+      resultAfter.innerHTML = `
+        <div class="relative w-full h-full">
+          <img src="${uploadedImageData}" class="w-full h-full object-contain" style="filter:saturate(1.15) contrast(1.05);"/>
+          <div class="absolute inset-0" style="background:linear-gradient(135deg, ${grad[0]}, ${grad[1]}); mix-blend-mode:color; opacity:0.55;"></div>
+          <div class="absolute inset-0" style="background:linear-gradient(to top, rgba(0,0,0,0.35), transparent 55%);"></div>
+        </div>`;
+    } else {
+      resultAfter.innerHTML = pavilionSVG({after:true, gradient:grad});
+    }
+    resultAfter.style.animation = 'fadeIn .6s ease';
+  }
+
+  function showMockLabel(){ resultModeBadge.textContent = 'MOCK'; resultModeBadge.classList.remove('text-emerald-400','border-emerald-400/40'); }
+  function showAiLabel(){ resultModeBadge.textContent = 'AI 생성'; resultModeBadge.classList.add('text-emerald-400','border-emerald-400/40'); }
+
+  generateBtn.addEventListener('click', async () => {
+    generateBtn.disabled = true;
+    generateBtn.textContent = 'Generating…';
+    generateBtn.classList.add('opacity-60');
+    progressWrap.classList.remove('hidden');
+    progressBar.style.transition = 'none';
+    progressBar.style.width = '0%';
+
+    if(canUseRealGeneration()){
+      // indeterminate creep while we wait for the real API — we don't get real
+      // progress events from a single generateContent call, so this just signals "still working"
+      let fake = 0;
+      const creep = setInterval(() => {
+        fake = Math.min(fake + (88-fake)*0.06, 88);
+        progressBar.style.transition = 'width .3s linear';
+        progressBar.style.width = fake + '%';
+      }, 200);
+
+      try{
+        if(edgePending) await edgePending;   // make sure the structure guide is ready
+        const nums = imageNumbers();
+        const images = SLOT_DEFS.filter(s => slotData[s.id]).map(s => ({
+          caption: `Image ${nums[s.id]}: ${s.apiLabel}.`,
+          dataUrl: slotData[s.id].dataUrl,
+        }));
+        if(nums.edge){
+          images.push({
+            caption: `Image ${nums.edge}: an edge map (black line drawing) extracted from Image 1 — a structural guide showing the exact position of its edges and contours.`,
+            dataUrl: edgeMapDataUrl,
+          });
+        }
+        const resultUrl = await callGeminiImageEdit({
+          promptText: plainPromptText(),
+          images,
+          apiKey: getApiKey(),
+          aspect: uploadedAspect,
+          model: imageSettings.model,
+          imageSize: imageSettings.size,
+        });
+        clearInterval(creep);
+        progressBar.style.transition = 'width .2s linear';
+        progressBar.style.width = '100%';
+        // size the panel to the ratio the model actually returned, so nothing is cropped
+        const outDims = await measureImage(resultUrl);
+        setPanelRatio(resultAfter, outDims ? outDims.w / outDims.h : (uploadedRatio || 1.5));
+        resultAfter.classList.remove('flex','items-center','justify-center');
+        resultAfter.innerHTML = `<img src="${resultUrl}" class="w-full h-full object-contain"/>`;
+        resultAfter.style.animation = 'fadeIn .6s ease';
+        showAiLabel();
+      }catch(err){
+        clearInterval(creep);
+        progressBar.style.width = '100%';
+        renderMockAfter();
+        const note = document.createElement('div');
+        note.className = 'absolute inset-x-0 bottom-0 px-2 py-1 text-[10px] text-red-300 leading-snug';
+        note.style.background = 'linear-gradient(to top, rgba(0,0,0,.85), transparent)';
+        note.textContent = `API 호출 실패 (${err.message}) — mock으로 대체했어요`;
+        resultAfter.style.position = 'relative';
+        resultAfter.appendChild(note);
+        showMockLabel();
+      }
+    } else {
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        progressBar.style.transition = 'width 3s linear';
+        progressBar.style.width = '100%';
+      }));
+      await new Promise(r => setTimeout(r, 3000));
+      renderMockAfter();
+      showMockLabel();
+    }
+
+    generateBtn.disabled = false;
+    updateGenerateButtonLabel();
+    generateBtn.classList.remove('opacity-60');
+    progressWrap.classList.add('hidden');
+    openResultModal();
+  });
+
+  // ---------- init ----------
+  renderLines();
+  renderNodes();
+  renderChips();
+  updatePrompt();
+  renderResultBefore();
+  resetAfterPanel();
+  updateApiKeyBadge();
+
+})();
+</script>
+</body>
+</html>
