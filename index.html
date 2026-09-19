@@ -23,22 +23,29 @@
   @keyframes fadeInUp{ from{opacity:0; transform:translateY(10px) scale(.98);} to{opacity:1; transform:translateY(0) scale(1);} }
   @keyframes progressStripe{ 0%{background-position:0 0;} 100%{background-position:40px 0;} }
   @keyframes bubblePop{
-    0%{ transform: translate(-50%,-50%) scale(1); }
-    35%{ transform: translate(-50%,-50%) scale(.84); }
-    65%{ transform: translate(-50%,-50%) scale(1.14); }
-    100%{ transform: translate(-50%,-50%) scale(1); }
+    0%{ transform: translate(-50%,-50%) translateZ(var(--z,0px)) scale(1); }
+    35%{ transform: translate(-50%,-50%) translateZ(var(--z,0px)) scale(.86); }
+    65%{ transform: translate(-50%,-50%) translateZ(var(--z,0px)) scale(1.12); }
+    100%{ transform: translate(-50%,-50%) translateZ(var(--z,0px)) scale(1); }
   }
-  @keyframes glowPulse{
-    0%,100%{ box-shadow: 0 0 0 1.5px var(--glow), 0 0 14px 2px var(--glow); }
-    50%{ box-shadow: 0 0 0 1.5px var(--glow), 0 0 26px 6px var(--glow); }
+  /* selected nodes: a slow white-amber liquid sheen plus a breathing glow on the rim */
+  @keyframes liquidShift{
+    0%{ background-position:0% 50%; }
+    100%{ background-position:100% 50%; }
+  }
+  @keyframes liquidGlow{
+    0%,100%{ box-shadow: 0 0 0 1px rgba(255,236,205,.42), 0 0 18px rgba(255,205,140,.32), 0 0 42px rgba(255,190,110,.12),
+                         inset 0 0 14px rgba(255,235,200,.22), inset 0 1px 0 rgba(255,255,255,.5), 0 12px 30px rgba(0,0,0,.35); }
+    50%{ box-shadow: 0 0 0 1px rgba(255,240,215,.62), 0 0 26px rgba(255,210,150,.5), 0 0 58px rgba(255,190,110,.2),
+                     inset 0 0 20px rgba(255,235,200,.32), inset 0 1px 0 rgba(255,255,255,.6), 0 12px 30px rgba(0,0,0,.35); }
+  }
+  @keyframes liquidGlowDot{
+    0%,100%{ box-shadow: 0 0 0 1px rgba(255,236,205,.5), 0 0 10px rgba(255,205,140,.6), 0 2px 8px rgba(0,0,0,.4); }
+    50%{ box-shadow: 0 0 0 1px rgba(255,240,215,.75), 0 0 18px rgba(255,210,150,.85), 0 2px 8px rgba(0,0,0,.4); }
   }
   @keyframes hubBreathe{
-    0%,100%{ transform:translate(-50%,-50%) scale(1); }
-    50%{ transform:translate(-50%,-50%) scale(1.035); }
-  }
-  @keyframes catBreathe{
-    0%,100%{ opacity:1; }
-    50%{ opacity:.82; }
+    0%,100%{ transform:translate(-50%,-50%) translateZ(var(--z,0px)) scale(1); }
+    50%{ transform:translate(-50%,-50%) translateZ(var(--z,0px)) scale(1.03); }
   }
 
   .progress-stripes{
@@ -50,55 +57,108 @@
   .chip-x:hover{ opacity:1; }
   .prompt-frag{ border-bottom:2px solid var(--frag-color); padding-bottom:1px; }
 
-  /* ---------- 2D relationship graph ---------- */
-  #graphField{ position:absolute; inset:0; }
+  /* ---------- radial relationship graph (VisionOS-style spatial glass) ---------- */
+  /* graphField stays flat (it is the hit-test surface); the plane inside it tilts in 3D with the
+     mouse, and every layer sits at its own translateZ so the depth reads when it tilts. */
+  #graphField{ position:absolute; inset:0; perspective:1400px; perspective-origin:50% 45%; }
+  #plane{ position:absolute; inset:0; transform-style:preserve-3d; will-change:transform; }
+  #nodesLayer, #bgBlobs{ position:absolute; inset:0; transform-style:preserve-3d; }
+  #bgBlobs{ pointer-events:none; }
+  .blob{ position:absolute; border-radius:50%; transform:translateZ(-150px); }
+  #graphLines{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; pointer-events:none; transform:translateZ(6px); }
 
+  /* frosted glass: deep blur, hairline white rim, soft inner shading */
   .bubble{
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    background: rgba(255,255,255,0.055);
-    box-shadow: 0 6px 24px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.05);
+    background: linear-gradient(145deg, rgba(255,255,255,.15), rgba(255,255,255,.04) 62%, rgba(255,255,255,.08)), rgba(14,14,20,.38);
+    backdrop-filter: blur(20px) saturate(1.3);
+    -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    border:1px solid rgba(255,255,255,.2);
+    box-shadow: 0 12px 32px rgba(0,0,0,.38), 0 2px 6px rgba(0,0,0,.25),
+                inset 0 1px 0 rgba(255,255,255,.34), inset 0 -10px 18px rgba(0,0,0,.16);
   }
 
   .hub-bubble{
-    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-    padding:16px 28px; border-radius:9999px; text-align:center;
-    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12px; letter-spacing:.09em;
-    color:#f2efe9; border:1px solid rgba(255,255,255,.14);
-    animation: hubBreathe 5s ease-in-out infinite;
-    z-index:5; pointer-events:none;
+    --z:26px;
+    position:absolute; transform:translate(-50%,-50%) translateZ(var(--z));
+    padding:18px 36px; border-radius:9999px; text-align:center;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12.5px; letter-spacing:.14em;
+    color:rgba(255,255,255,.92);
+    animation: hubBreathe 6s ease-in-out infinite;
+    transition: opacity .35s ease;
+    pointer-events:auto; cursor:pointer;
   }
+  #graphField.has-focus .hub-bubble{ opacity:.45; }
 
+  /* category bubble: grows and lets a soft tinted light bloom out while its cluster is open */
   .cat-anchor{
-    position:absolute; transform:translate(-50%,-50%);
-    padding:13px 24px; border-radius:9999px; white-space:nowrap;
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px;
-    border:1.5px solid rgba(255,255,255,.16);
-    animation: catBreathe 4.5s ease-in-out infinite;
-    pointer-events:none;
-    z-index:6;
+    --z:44px; --s:1;
+    position:absolute; transform:translate(-50%,-50%) translateZ(var(--z)) scale(var(--s));
+    padding:14px 26px; border-radius:9999px; white-space:nowrap; cursor:pointer;
+    font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; letter-spacing:.01em;
+    transition: transform .5s cubic-bezier(.22,1,.36,1), opacity .35s ease, box-shadow .45s ease;
   }
-  .cat-anchor .cat-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:8px; vertical-align:middle; }
+  .cat-anchor.is-focused{
+    --s:1.12;
+    box-shadow: 0 0 46px var(--catglow), 0 16px 38px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.42), inset 0 -10px 18px rgba(0,0,0,.14);
+  }
+  #graphField.has-focus .cat-anchor:not(.is-focused){ opacity:.4; }
+  .cat-anchor .cat-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:9px; vertical-align:middle; box-shadow:0 0 8px currentColor; }
   .cat-badge{
-    position:absolute; top:-7px; right:-7px; min-width:18px; height:18px; padding:0 4px;
-    border-radius:9999px; background:#f5c07a; color:#0b0b0d; font-size:10px; font-weight:700;
+    position:absolute; top:-7px; right:-7px; min-width:19px; height:19px; padding:0 5px;
+    border-radius:9999px; background:linear-gradient(135deg,#fff3dc,#f5c07a); color:#2a1d0a; font-size:10px; font-weight:700;
     display:flex; align-items:center; justify-content:center; font-family:'Inter',sans-serif;
-    box-shadow:0 2px 6px rgba(0,0,0,.45);
+    box-shadow:0 2px 8px rgba(0,0,0,.45), 0 0 12px rgba(255,205,140,.5);
   }
 
-  .leaf-bubble{
-    position:absolute; transform:translate(-50%,-50%) scale(1);
-    padding:9px 16px; border-radius:9999px; white-space:nowrap; cursor:pointer;
-    font-size:12px; color:#e5e5e5; border:1px solid #2a2a2e;
-    transition: transform .25s cubic-bezier(.22,1,.36,1), background-color .25s ease, border-color .25s ease, color .25s ease;
-    z-index:7;
+  /* option node: a labelled frosted pill that is always visible; it grows when its category opens */
+  .leaf{
+    --z:16px; --s:1;
+    position:absolute; transform:translate(-50%,-50%) translateZ(var(--z)) scale(var(--s));
+    display:flex; align-items:center; justify-content:center;
+    height:26px; padding:0 12px; border-radius:9999px; white-space:nowrap; cursor:pointer;
+    font-size:11px; font-weight:500; color:rgba(255,255,255,.88);
+    background: linear-gradient(145deg, rgba(255,255,255,.14), rgba(255,255,255,.035) 62%, rgba(255,255,255,.07)), rgba(20,20,28,.66);
+    border:1px solid rgba(255,255,255,.17);
+    box-shadow: 0 8px 22px rgba(0,0,0,.34), 0 1px 4px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.28), inset 0 -8px 14px rgba(0,0,0,.15);
+    transition: height .5s cubic-bezier(.22,1,.36,1), padding .5s cubic-bezier(.22,1,.36,1), font-size .5s cubic-bezier(.22,1,.36,1),
+                transform .5s cubic-bezier(.22,1,.36,1), border-color .3s ease, opacity .35s ease, box-shadow .35s ease;
   }
-  .leaf-bubble:hover{ transform:translate(-50%,-50%) scale(1.12); }
-  .leaf-bubble.is-selected{ font-weight:600; animation: glowPulse 2.6s ease-in-out infinite; }
-  .bubble-pop{ animation: bubblePop .42s cubic-bezier(.34,1.56,.64,1); }
-  .leaf-bubble.is-selected.bubble-pop{ animation: bubblePop .42s cubic-bezier(.34,1.56,.64,1), glowPulse 2.6s ease-in-out infinite; }
+  .leaf .leaf-label{ text-shadow:0 1px 3px rgba(0,0,0,.45); display:inline-flex; align-items:center; gap:7px; }
+  .leaf .ld{ display:inline-block; flex:none; width:5px; height:5px; border-radius:50%; box-shadow:0 0 7px currentColor; }
+  .leaf.is-open{
+    --z:78px;
+    height:36px; padding:0 18px; font-size:12.5px; color:rgba(255,255,255,.95);
+    background: linear-gradient(145deg, rgba(255,255,255,.15), rgba(255,255,255,.04) 62%, rgba(255,255,255,.08)), rgba(14,14,20,.38);
+    backdrop-filter: blur(20px) saturate(1.3); -webkit-backdrop-filter: blur(20px) saturate(1.3);
+    border-color:rgba(255,255,255,.22);
+    box-shadow: 0 12px 32px rgba(0,0,0,.38), 0 2px 6px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.34), inset 0 -10px 18px rgba(0,0,0,.16);
+  }
+  .leaf:hover{ --s:1.1; }
+  #graphField.has-focus .leaf:not(.is-open):not(.is-partner){ opacity:.42; }
+  .leaf.is-partner{ box-shadow: 0 0 0 1.5px rgba(255,236,205,.85), 0 0 16px rgba(255,214,160,.55), 0 2px 8px rgba(0,0,0,.4); }
 
-  #graphLines{ position:absolute; inset:0; z-index:1; pointer-events:none; }
+  /* active (selected): white-amber liquid glow on the rim */
+  .leaf.is-selected{
+    background: linear-gradient(120deg, rgba(255,255,255,.27), rgba(255,214,160,.22) 50%, rgba(255,255,255,.17));
+    background-size:220% 100%;
+    border-color:rgba(255,236,205,.65);
+    color:#fff;
+    animation: liquidGlow 3.2s ease-in-out infinite, liquidShift 7s ease-in-out infinite alternate;
+  }
+  .bubble-pop{ animation: bubblePop .45s cubic-bezier(.34,1.56,.64,1); }
+  .leaf.is-selected.bubble-pop{ animation: bubblePop .45s cubic-bezier(.34,1.56,.64,1), liquidGlow 3.2s ease-in-out infinite, liquidShift 7s ease-in-out infinite alternate; }
+
+  /* edges: thin warm-grey Bezier curves; the skeleton stays barely there and the
+     cross-links only draw in while their node is hovered */
+  .edge{ fill:none; stroke:#cfc6bd; stroke-linecap:round; transition: stroke-opacity .5s ease, stroke-width .4s ease; }
+  .edge-trunk{ stroke-width:1.3; stroke-opacity:.2; }
+  .edge-spoke{ stroke-width:1; stroke-opacity:.12; }
+  .edge-link{ stroke-width:1.2; stroke-opacity:0; stroke-dasharray:1; stroke-dashoffset:1;
+              transition: stroke-dashoffset .85s cubic-bezier(.22,1,.36,1), stroke-opacity .5s ease, stroke-width .4s ease; }
+  .edge-link.is-rec{ stroke:#f0c890; }
+  .edge.is-soft{ stroke-opacity:.42; }
+  .edge.is-lit{ stroke-opacity:.9; stroke-width:1.7; }
+  .edge-link.is-lit{ stroke-dashoffset:0; }
 
   .locked-chip{
     font-size:10px; padding:2px 9px; border-radius:9999px; border:1px solid rgba(255,255,255,.08);
@@ -219,9 +279,9 @@
   <!-- TOP: 2D RELATIONSHIP GRAPH -->
   <div id="graphPanel" class="relative overflow-hidden" style="background:radial-gradient(circle at 50% 42%, #16161a 0%, #0b0b0d 70%);">
 
-    <div class="absolute top-6 left-7 z-40 select-none pointer-events-none max-w-[420px]">
+    <div id="headerBlock" class="absolute top-6 left-7 z-40 select-none pointer-events-none max-w-[420px]">
       <h1 class="font-display text-xl font-semibold text-[#f2efe9]">Interactive Prompt Builder</h1>
-      <p class="text-[12px] text-gray-500 mt-1">노드 호버로 미리보기 · 클릭으로 선택 · 점선은 서로 어울리는 조합</p>
+      <p class="text-[12px] text-gray-500 mt-1">카테고리에 커서를 올리면 펼쳐져요 · 옵션에 호버하면 미리보기와 어울리는 조합이 나타나요 · 클릭으로 선택</p>
       <div class="flex items-center gap-1.5 flex-wrap mt-2.5 pointer-events-auto">
         <span class="text-[10px] text-gray-600">🔒 레퍼런스 이미지로 고정됨 (변경 불가):</span>
         <span class="locked-chip">설계 의도</span>
@@ -231,19 +291,29 @@
       </div>
     </div>
 
-    <div class="absolute top-6 right-7 z-40 flex flex-col gap-2 items-end">
+    <div id="topRightBlock" class="absolute top-6 right-7 z-40 flex flex-col gap-2 items-end">
       <button id="apiKeyBtn" class="text-[11px] px-3 py-1.5 rounded-full border border-white/10 text-gray-400 hover:text-white hover:border-white/30 pointer-events-auto" style="backdrop-filter:blur(10px); background:rgba(255,255,255,.04);">🔑 API Key 설정</button>
       <div id="legend" class="flex flex-col gap-1.5 items-end"></div>
     </div>
 
-    <svg id="graphLines"></svg>
-    <div id="graphField" class="absolute inset-0 w-full h-full"></div>
+    <div id="graphField" class="absolute inset-0 w-full h-full">
+      <div id="plane">
+        <div id="bgBlobs">
+          <div class="blob" style="left:4%; top:2%; width:48%; height:74%; background:radial-gradient(closest-side, rgba(251,191,36,.20), transparent);"></div>
+          <div class="blob" style="left:48%; top:2%; width:48%; height:74%; background:radial-gradient(closest-side, rgba(251,146,60,.19), transparent);"></div>
+          <div class="blob" style="left:26%; top:32%; width:48%; height:80%; background:radial-gradient(closest-side, rgba(192,132,252,.20), transparent);"></div>
+        </div>
+        <svg id="graphLines"></svg>
+        <div id="nodesLayer"></div>
+      </div>
+    </div>
 
     <div id="imgPopover">
       <div id="imgSwatch" class="w-full"></div>
       <div class="px-3 py-2.5">
         <div id="imgPopoverCat" class="text-[10px] tracking-wider text-gray-500 uppercase"></div>
         <div id="imgPopoverLabel" class="text-[13px] text-[#f2efe9] font-medium mt-0.5"></div>
+        <div id="imgPopoverDesc" class="text-[11px] text-gray-400 mt-1 leading-snug"></div>
       </div>
     </div>
   </div>
@@ -348,27 +418,35 @@
   // separate selectable categories, but that implied a user could ask the tool
   // to change them, which contradicts the whole "preserve structure" premise.
   const CATEGORIES = [
-    { id:'lighting', labelEn:'Lighting', labelKo:'조명', color:'#fbbf24',
+    { id:'lighting', labelEn:'Lighting', labelKo:'조명 · 시간대', color:'#fbbf24',
       options:[
-        {id:'light-golden',    label:'Golden hour',       prompt:'golden hour warm light',   gradient:['#f59e0b','#fde68a'], image:unsplash('1696470553784-4f28d59b305d')},
-        {id:'light-overcast',  label:'Overcast diffuse',  prompt:'overcast diffuse light',   gradient:['#94a3b8','#e2e8f0'], image:unsplash('1645537255494-c6413186f8a0')},
-        {id:'light-backlight', label:'Dramatic backlight',prompt:'dramatic backlight',       gradient:['#312e81','#818cf8'], image:unsplash('1765892839055-142827f49ca5')},
-        {id:'light-midday',    label:'Harsh midday sun',  prompt:'harsh midday sun',         gradient:['#eab308','#fef08a'], image:unsplash('1622033786644-1ae186949084')},
+        {id:'light-golden',    label:'Golden hour',                 desc:'낮게 깔리는 따뜻한 역광과 긴 그림자',                       prompt:'golden hour warm light',        gradient:['#f59e0b','#fde68a'], image:unsplash('1696470553784-4f28d59b305d')},
+        {id:'light-bluehour',  label:'Blue hour dusk',              desc:'해 질 녘 푸른 하늘과 대비되는 인공조명의 온기',              prompt:'blue hour dusk',                gradient:['#1e3a8a','#f59e0b'], image:unsplash('1739770125526-a79a020ec6fb')},
+        {id:'light-overcast',  label:'Overcast diffuse',            desc:'그림자 경계가 부드러운 흐린 날의 고른 확산광',                prompt:'overcast diffuse light',        gradient:['#94a3b8','#e2e8f0'], image:unsplash('1645537255494-c6413186f8a0')},
+        {id:'light-midday',    label:'Harsh midday sun',            desc:'깊고 날카로운 콘트라스트를 만드는 정오 직사광',               prompt:'harsh midday sun',              gradient:['#eab308','#fef08a'], image:unsplash('1622033786644-1ae186949084')},
+        {id:'light-dappled',   label:'Dappled sunlight (Komorebi)', desc:'캐노피나 나뭇잎 틈새로 부서져 내리는 얼룩 그림자',            prompt:'dappled sunlight',              gradient:['#3f6212','#fde68a'], image:unsplash('1725331939873-a491fa8b6ffa')},
+        {id:'light-uplight',   label:'Cinematic uplighting',        desc:'저녁 야경에서 구조물 하부를 강조하는 극적인 상향 간접광',      prompt:'cinematic uplighting',          gradient:['#111827','#f59e0b'], image:unsplash('1601881403737-2a6085443ba2')},
+        {id:'light-fog',       label:'Foggy ambient light',         desc:'빛줄기(God rays)가 은은하게 갈라지는 안개 낀 아침 빛',        prompt:'foggy ambient light',           gradient:['#94a3b8','#f1f5f9'], image:unsplash('1762755643266-a462bbf63e0b')},
       ]},
     { id:'atmosphere', labelEn:'Atmosphere', labelKo:'분위기 · 톤', color:'#fb923c',
       options:[
-        {id:'atmo-beige',     label:'Warm beige tone',     prompt:'warm beige tone',             gradient:['#b45309','#fde68a'], image:unsplash('1646600950096-0489e2a461cc')},
-        {id:'atmo-turquoise', label:'Cool turquoise tone', prompt:'cool turquoise tone',         gradient:['#0e7490','#67e8f9'], image:unsplash('1681228777788-8cf62e064b32')},
-        {id:'atmo-charcoal',  label:'Deep charcoal accent',prompt:'deep charcoal accent',        gradient:['#292524','#78716c'], image:unsplash('1533719791354-582f7a7e136e')},
-        {id:'atmo-serene',    label:'Serene and calm',     prompt:'serene and calm',             gradient:['#134e4a','#5eead4'], image:unsplash('1622396481322-3b83d186701b')},
-        {id:'atmo-vibrant',   label:'Vibrant and social',  prompt:'vibrant and social',          gradient:['#9d174d','#f472b6'], image:unsplash('1771385213738-1451577201a7')},
+        {id:'atmo-beige',      label:'Warm beige tone',             desc:'편안하고 우아한 지중해·석재 중심의 뉴트럴 톤',                prompt:'warm beige tone',               gradient:['#b45309','#fde68a'], image:unsplash('1646600950096-0489e2a461cc')},
+        {id:'atmo-charcoal',   label:'Cool concrete & charcoal',    desc:'차분하고 묵직한 모던 브루탈리즘 감성',                       prompt:'cool concrete and charcoal',    gradient:['#374151','#9ca3af'], image:unsplash('1579724175242-0204ecac28cb')},
+        {id:'atmo-terracotta', label:'Earthy terracotta',           desc:'붉은 점토와 건조한 유럽 남부의 온화한 분위기',                prompt:'earthy terracotta',             gradient:['#9a3412','#fdba74'], image:unsplash('1552853519-1793ff886074')},
+        {id:'atmo-serene',     label:'Serene & contemplative',      desc:'시선이 머무는 고요하고 정적인 여백의 무드',                   prompt:'serene and contemplative',      gradient:['#134e4a','#5eead4'], image:unsplash('1622396481322-3b83d186701b')},
+        {id:'atmo-biophilic',  label:'Lush biophilic',              desc:'풍성한 식생과 자연스럽게 녹아든 유기적 생기',                 prompt:'lush biophilic',                gradient:['#166534','#86efac'], image:unsplash('1693517596637-8190ac7afc0e')},
+        {id:'atmo-misty',      label:'Misty morning',               desc:'이슬 맺힌 공기감과 차분한 미니멀리즘',                       prompt:'misty morning',                 gradient:['#64748b','#e2e8f0'], image:unsplash('1676144844767-b25cb5e6c896')},
+        {id:'atmo-vibrant',    label:'Vibrant social ambient',      desc:'따뜻한 인적이 느껴지는 활기찬 중정 느낌',                     prompt:'vibrant social ambient',        gradient:['#9d174d','#f472b6'], image:unsplash('1771385213738-1451577201a7')},
       ]},
-    { id:'style', labelEn:'Style', labelKo:'렌더링 무드', color:'#f0abfc',
+    { id:'style', labelEn:'Style', labelKo:'렌더링 질감 · 스타일', color:'#f0abfc',
       options:[
-        {id:'style-photo',       label:'Photorealistic',      prompt:'photorealistic architectural rendering', gradient:['#334155','#94a3b8'], image:unsplash('1782397088210-4f7186894a60')},
-        {id:'style-watercolor',  label:'Soft watercolor',     prompt:'soft watercolor rendering',              gradient:['#a855f7','#e9d5ff'], image:unsplash('1776286287672-bc6d1c0bbd32')},
-        {id:'style-cinematic',   label:'Cinematic dramatic',  prompt:'cinematic dramatic render',              gradient:['#1e293b','#7dd3fc'], image:unsplash('1531591022136-eb8b0da1e6d0')},
-        {id:'style-lineart',     label:'Minimalist line-art', prompt:'minimalist line-art render',             gradient:['#44403c','#e7e5e4'], image:unsplash('1492714673295-07efb43ddaf8')},
+        {id:'style-photo',     label:'Photorealistic architectural shot', desc:'Architectural Digest 스타일의 정교한 실사 건축 사진',    prompt:'photorealistic architectural photograph', gradient:['#334155','#94a3b8'], image:unsplash('1782397088210-4f7186894a60')},
+        {id:'style-brutalist', label:'Brutalist raw concrete',      desc:'콘크리트 거푸집 자국과 질감이 도드라지는 사실적 표현',        prompt:'brutalist raw concrete',        gradient:['#57534e','#d6d3d1'], image:unsplash('1625390711106-3728815ebcd9')},
+        {id:'style-medit',     label:'Minimalist Mediterranean',    desc:'밝은 석회석(Limestone)과 목재 루버가 어우러진 현대적 휴양 양식', prompt:'minimalist Mediterranean',    gradient:['#0ea5e9','#fef3c7'], image:unsplash('1760341841961-2ef454d38725')},
+        {id:'style-cinematic', label:'Cinematic drama',             desc:'영화 속 한 장면 같은 짙은 앰비언트 오클루전과 명암비',        prompt:'cinematic drama',               gradient:['#1e293b','#7dd3fc'], image:unsplash('1531591022136-eb8b0da1e6d0')},
+        {id:'style-collage',   label:'Architectural collage / Post-digital', desc:'David Chipperfield나 Pezo von Ellrichshausen 스타일의 감성적인 콜라주 무드', prompt:'architectural collage', gradient:['#7c3aed','#fbcfe8'], image:unsplash('1722525900906-d547a5f16084')},
+        {id:'style-lineart',   label:'Minimalist line-art',         desc:'구조미와 선(Line)을 강조한 미니멀 다이어그램 스타일',         prompt:'minimalist line-art',           gradient:['#44403c','#e7e5e4'], image:unsplash('1492714673295-07efb43ddaf8')},
+        {id:'style-watercolor',label:'Textured watercolor concept', desc:'따뜻한 수채화 물감이 스며든 듯한 초기 기획 스케치 룩',        prompt:'textured watercolor concept',   gradient:['#a855f7','#e9d5ff'], image:unsplash('1776286287672-bc6d1c0bbd32')},
       ]},
   ];
 
@@ -381,50 +459,194 @@
   // behaviour, palette, material rendering) when the prompt is assembled.
   const OPTION_DETAILS = {
     'light-golden':    'Low-angle, warm amber golden-hour sunlight raking across the scene from the side. Long, soft-edged shadows fall across the ground and walls; highlights glow honey-gold on pale surfaces and thin or translucent materials, while the shadows stay warm and gently lifted.',
+    'light-bluehour':  'Blue-hour dusk: the sky deepens to a clear, saturated blue just after sunset, while warm artificial light glows from windows, lamps and accent fixtures. The warm light contrasts with the cool ambient blue, giving soft, luminous pools of light on the surfaces and cool, low-key shadows. Only the lighting changes; do not add or move any object.',
     'light-overcast':  'Soft, even daylight under a uniformly bright overcast sky. Shadows are faint and feather-edged with no harsh contrast, so surface textures read clearly with gentle, low-contrast modeling.',
-    'light-backlight': 'Strong sun placed behind and above the main subject, producing luminous rim light along its edges, a translucent glow through any thin or translucent materials, and deep, high-contrast shadows falling toward the camera.',
     'light-midday':    'High overhead midday sun with crisp, hard-edged short shadows and strong highlight-to-shadow contrast. The main subject casts sharp, well-defined shadow patterns onto the surfaces around and beneath it, under a clear, saturated sky.',
-    'atmo-beige':      'A palette of warm neutrals — sand, cream and warm stone beige — with soft amber accents. Avoid any cool or blue cast in the shadows, walls or ground.',
-    'atmo-turquoise':  'A cool, fresh palette with subtle turquoise and teal undertones in the shadows and sky reflections, balanced against neutral surfaces so that all materials stay believable.',
-    'atmo-charcoal':   'Deep charcoal and near-black accents in the shadow areas and structural details, adding weight and contrast against the lighter surfaces without crushing detail.',
-    'atmo-serene':     'A quiet, still, contemplative mood: soft tonal transitions, restrained contrast, nothing busy or cluttered, a gentle stillness in the air.',
-    'atmo-vibrant':    'A lively, inviting mood with richer color saturation and a feeling of warmth and life, as a place where people would want to gather. Do not add new objects or people.',
-    'style-photo':     'A photorealistic finish with a clean, detailed, high-resolution look. Give the existing surfaces real material texture and a natural response to light — the grain of stone, wood and fabric, the finish of metal and glass, wherever those materials appear, clearly resolved — with a natural color grade. This changes surface finish only, never the geometry or the framing.',
-    'style-watercolor':'A watercolor illustration with translucent washes, soft pigment blooms and delicate pencil linework, keeping every form and proportion exactly as in the reference.',
-    'style-cinematic': 'A filmic look with a strong tonal range, subtle atmospheric depth and a cohesive graded color palette, like a still from a feature film.',
-    'style-lineart':   'A clean line drawing with fine, consistent linework, minimal flat tonal fills and generous white space, keeping every form exactly in place.',
+    'light-dappled':   'Dappled sunlight (komorebi): sunlight as if filtered through foliage or a light screen overhead, breaking into soft, shifting patches of light and shadow that scatter across the ground, walls and surfaces. The light is warm and gentle where it lands, with quiet, cool shade between the patches. Only the light pattern is added; do not add trees or new structures to the scene.',
+    'light-uplight':   'Cinematic uplighting: an evening scene lit from below by concealed, warm accent lights that graze upward along the structure, emphasizing the underside of roofs and overhangs and the vertical surfaces with dramatic, sculpted gradients of light. The rest of the scene falls into a deep, dark twilight. Only the lighting changes; do not add or move any object.',
+    'light-fog':       'Foggy ambient light: soft morning light diffused through a light fog, with faint, subtle shafts of light (god rays) gently splitting the haze. Distant elements fade softly into the mist, contrast is low, and the whole scene feels quiet and luminous.',
+    'atmo-beige':      'A palette of warm neutrals — sand, cream and warm stone beige — with soft amber accents, a comfortable, elegant Mediterranean and stone-centered neutral tone. Avoid any cool or blue cast in the shadows, walls or ground.',
+    'atmo-charcoal':   'A calm, heavy, modern-brutalist mood: cool grey concrete tones with deep charcoal and near-black accents in the shadows and details, restrained color and a sober, weighty atmosphere. Keep enough detail in the darkest areas.',
+    'atmo-terracotta': 'An earthy, warm palette of red clay, terracotta and dry ochre tones with the gentle, sun-baked mood of southern Europe; muted, dusty and soft rather than saturated.',
+    'atmo-serene':     'A quiet, still, contemplative mood: soft tonal transitions, restrained contrast, calm open space where the eye can rest, nothing busy or cluttered.',
+    'atmo-biophilic':  'A lush, biophilic feeling: the vegetation already in the scene looks richer, fresher and healthier, feeling naturally integrated with the built forms, softening edges and adding living, organic color. Do not add or move objects.',
+    'atmo-misty':      'A misty morning atmosphere: dewy, moist air, a soft haze, cool and gentle color and a calm, minimal feel with muted contrast.',
+    'atmo-vibrant':    'A lively, inviting courtyard-like mood with richer color saturation and a warm sense of human presence, as a place where people gather. Do not add new objects or people.',
+    'style-photo':     'Editorial architectural photography in the manner of Architectural Digest: a refined, high-resolution, photorealistic finish with a clean, detailed look, balanced exposure and a natural color grade. Give the existing surfaces real material texture and a natural response to light — the grain of stone, wood and fabric, the finish of metal and glass, wherever those materials appear — clearly resolved. This changes surface finish only, never the geometry or the framing.',
+    'style-brutalist': 'A brutalist raw-concrete rendering: concrete surfaces show visible formwork marks, board-marked grain, tie holes and subtle weathering, with heavy, tactile realism. Apply this texture to the existing surfaces only, without changing any geometry.',
+    'style-medit':     'A minimalist Mediterranean, contemporary-resort look: bright limestone surfaces and warm timber louvers where the surfaces allow, clean, airy, sun-washed and refined. Express this through surface materials and finish only; do not add or change any element or geometry.',
+    'style-cinematic': 'A cinematic, dramatic look like a still from a film: deep ambient occlusion in corners and recesses, strong tonal contrast, rich shadows and a cohesive graded color palette.',
+    'style-collage':   'A poetic architectural collage, post-digital mood in the manner of David Chipperfield or Pezo von Ellrichshausen visualizations: muted, softly layered tones with a painterly, slightly cut-and-pasted feel, a pale gentle palette and a quiet emotional atmosphere, while keeping every form and its position exactly as in the reference.',
+    'style-lineart':   'A minimal diagram-style rendering that emphasizes structure and line: clean, fine, consistent linework, minimal flat tonal fills and generous white space, keeping every form exactly in place.',
+    'style-watercolor':'A textured watercolor concept-sketch look: warm watercolor pigment soaking into paper, translucent washes, soft pigment blooms and delicate pencil linework, like an early-stage concept sketch, keeping every form and proportion exactly as in the reference.',
   };
 
   // curated "goes well together" pairings across categories, drawn as dashed
-  // curved links distinct from the plain parent→child lines
+  // curved links. The three 'rec' triads are the recommended combinations and are
+  // drawn stronger than the rest.
   const CROSS_LINKS = [
-    ['light-golden','atmo-beige'], ['light-golden','style-photo'],
+    // recommended: Mediterranean warmth
+    ['light-dappled','atmo-beige','rec'], ['atmo-beige','style-medit','rec'], ['light-dappled','style-medit','rec'],
+    // recommended: modern brutalism
+    ['light-overcast','atmo-charcoal','rec'], ['atmo-charcoal','style-photo','rec'], ['light-overcast','style-photo','rec'],
+    // recommended: evening drama
+    ['light-bluehour','atmo-serene','rec'], ['atmo-serene','style-cinematic','rec'], ['light-bluehour','style-cinematic','rec'],
+    ['light-golden','atmo-beige'], ['light-golden','atmo-terracotta'], ['atmo-terracotta','style-medit'],
+    ['atmo-charcoal','style-brutalist'],
+    ['light-uplight','style-cinematic'], ['light-uplight','atmo-vibrant'],
+    ['light-fog','atmo-misty'], ['atmo-misty','style-lineart'],
     ['atmo-beige','style-watercolor'],
-    ['atmo-turquoise','light-overcast'],
-    ['style-lineart','atmo-charcoal'], ['style-lineart','light-overcast'],
-    ['atmo-vibrant','light-backlight'], ['atmo-vibrant','style-cinematic'],
-    ['atmo-charcoal','light-backlight'], ['style-cinematic','light-backlight'],
-    ['atmo-serene','light-overcast'],
+    ['light-dappled','atmo-biophilic'],
   ];
 
-  const W = 1100, H = 680, CX = 550, CY = 340, R1 = 175, CHILD_R = 150, FAN = 130;
+  // Radial layout: the hub in the middle, the three categories around it, and every option
+  // always visible as a labelled pill on a ring around its category. Opening a category
+  // (hover / click) grows the category bubble and blooms its ring wider with bigger pills.
+  // Label widths and the canvas size both vary, so positions are solved in pixel space (with a
+  // small overlap-resolving pass) and stored in virtual units for the animation engine.
+  const W = 1100, H = 680;
+  const HUB = { x:550, y:340 };                       // virtual units, updated by computeLayout()
+  const HUB_FRAC = { x:.50, y:.50 };
+  const ANCHOR_FRAC = [ {x:.27, y:.40}, {x:.73, y:.40}, {x:.50, y:.80} ];
+  const GAP_DEG = 42;                                 // keep the side that faces the hub free of pills
+  const PILL = {
+    closed:{ h:26, font:'500 11px Inter, sans-serif',   pad:24 },
+    open:  { h:36, font:'500 12.5px Inter, sans-serif', pad:36 },
+  };
 
-  function polar(cx,cy,r,deg){ const rad = deg*Math.PI/180; return {x:cx+r*Math.cos(rad), y:cy+r*Math.sin(rad)}; }
   function clamp(v,min,max){ return Math.min(max, Math.max(min, v)); }
   function pct(v, total){ return (v/total*100).toFixed(2) + '%'; }
 
-  CATEGORIES.forEach((cat, i) => {
-    // offset so no category sits exactly on the top/bottom pole, which is
-    // where the canvas has the least vertical room for its fanned-out children
-    const angle = -150 + i * (360/CATEGORIES.length);
-    cat.pos = polar(CX, CY, R1, angle);
-    const n = cat.options.length;
-    cat.options.forEach((opt, j) => {
-      const offset = n > 1 ? (-FAN/2 + j*(FAN/(n-1))) : 0;
-      const raw = polar(cat.pos.x, cat.pos.y, CHILD_R, angle + offset);
-      opt.pos = { x: clamp(raw.x, 65, W-65), y: clamp(raw.y, 45, H-45) };
-    });
+  CATEGORIES.forEach(cat => {
+    cat.base = { x:0, y:0 };
+    cat.shift = { x:0, y:0 };
+    cat.cur = { x:0, y:0 };
+    cat.expand = 0;                      // animated 0 (closed) .. 1 (open)
+    cat.zone0 = cat.zone1 = { cx:0, cy:0, hx:1, hy:1 };
+    cat.options.forEach(o => { o.p0 = {x:0,y:0}; o.p1 = {x:0,y:0}; o.cur = {x:0,y:0}; });
   });
+
+  const measureCtx = document.createElement('canvas').getContext('2d');
+  function pillWidth(label, state){
+    measureCtx.font = PILL[state].font;
+    return measureCtx.measureText(label).width * 1.05 + PILL[state].pad + 12;   // + colour dot and gap
+  }
+
+  // push two overlapping rects apart along the axis with the smaller overlap
+  function separate(a, b, wa, wb){
+    const pad = 9, dx = b.x - a.x, dy = b.y - a.y;
+    const ox = (a.w + b.w)/2 + pad - Math.abs(dx), oy = (a.h + b.h)/2 + pad - Math.abs(dy);
+    if(ox <= 0 || oy <= 0) return;
+    if(ox < oy){ const s = Math.sign(dx) || 1; a.x -= s*ox*wa; b.x += s*ox*wb; }
+    else       { const s = Math.sign(dy) || 1; a.y -= s*oy*wa; b.y += s*oy*wb; }
+  }
+  function relax(items, fixed, bounds, iters){
+    for(let it = 0; it < iters; it++){
+      for(let i = 0; i < items.length; i++){
+        const a = items[i];
+        for(let j = i+1; j < items.length; j++) separate(a, items[j], .5, .5);
+        for(const f of fixed) separate(a, f, 1, 0);
+        a.x += (a.x0 - a.x) * .015; a.y += (a.y0 - a.y) * .015;     // stay close to the ring slot
+        a.x = clamp(a.x, bounds.l + a.w/2, bounds.r - a.w/2);
+        a.y = clamp(a.y, bounds.t + a.h/2, bounds.b - a.h/2);
+      }
+    }
+  }
+
+  function countOverlaps(items){
+    let c = 0;
+    for(let i = 0; i < items.length; i++) for(let j = i+1; j < items.length; j++){
+      const a = items[i], b = items[j];
+      if(Math.abs(b.x - a.x) < (a.w + b.w)/2 && Math.abs(b.y - a.y) < (a.h + b.h)/2) c++;
+    }
+    return c;
+  }
+  // relax the ring; if pills still overlap (small windows), widen the ring a little and retry
+  function solve(build, fixed, bounds){
+    let best = null, bestC = Infinity;
+    for(let k = 0; k < 7; k++){
+      const items = build(1 + k*0.09, 1 + k*0.06);
+      relax(items, fixed, bounds, 180);
+      const c = countOverlaps(items);
+      if(c < bestC){ best = items; bestC = c; }
+      if(c === 0) break;
+    }
+    return best;
+  }
+
+  function domBox(el, fr){
+    if(!el) return null;
+    const r = el.getBoundingClientRect();
+    return { x:(r.left + r.right)/2 - fr.left, y:(r.top + r.bottom)/2 - fr.top, w:r.width, h:r.height };
+  }
+
+  function computeLayout(){
+    const field = document.getElementById('graphField');
+    const fr = field.getBoundingClientRect();
+    const fw = fr.width, fh = fr.height;
+    if(fw < 50 || fh < 50) return;
+    const toU = p => ({ x: p.x * W / fw, y: p.y * H / fh });
+
+    const hubEl = document.getElementById('hubBubble');
+    const hubPx = { x: HUB_FRAC.x * fw, y: HUB_FRAC.y * fh };
+    const hubBox = { x:hubPx.x, y:hubPx.y, w: hubEl ? hubEl.offsetWidth : 190, h: hubEl ? hubEl.offsetHeight : 52 };
+    const ringClosed = { rx: clamp(.19*fw, 150, 270),  ry: clamp(.165*fh, 56, 100) };
+    const ringOpen   = { rx: clamp(.235*fw, 190, 340), ry: clamp(.25*fh, 90, 160) };
+    const bounds = { l:24, r:fw-24, t:8, b:fh-12 };
+    const blocked = ['headerBlock','topRightBlock'].map(id => domBox(document.getElementById(id), fr)).filter(Boolean);
+    const anchors = CATEGORIES.map((cat, i) => ({
+      x: ANCHOR_FRAC[i].x * fw, y: ANCHOR_FRAC[i].y * fh,
+      w: cat.el ? cat.el.offsetWidth : 140, h: cat.el ? cat.el.offsetHeight : 46,
+    }));
+
+    function slots(a, ring, n){
+      const phi = Math.atan2((hubPx.y - a.y) / ring.ry, (hubPx.x - a.x) / ring.rx);
+      const gap = GAP_DEG * Math.PI / 180, step = (2*Math.PI - 2*gap) / (n - 1);
+      return Array.from({length:n}, (_, j) => { const th = phi + gap + j*step; return { x:a.x + ring.rx*Math.cos(th), y:a.y + ring.ry*Math.sin(th) }; });
+    }
+
+    // closed: all 21 pills together so they also stay clear of each other across clusters
+    const closedItems = solve((kx, ky) => {
+      const items = [];
+      CATEGORIES.forEach((cat, i) => {
+        slots(anchors[i], { rx:ringClosed.rx*kx, ry:ringClosed.ry*ky }, cat.options.length).forEach((s, j) => {
+          const o = cat.options[j];
+          items.push({ o, cat, x:s.x, y:s.y, x0:s.x, y0:s.y, w:pillWidth(o.label,'closed'), h:PILL.closed.h });
+        });
+      });
+      return items;
+    }, [hubBox, ...anchors, ...blocked], bounds);
+    closedItems.forEach(it => { it.o.p0 = toU(it); });
+
+    // open: one cluster at a time, bigger ring and bigger pills
+    const openItems = {};
+    CATEGORIES.forEach((cat, i) => {
+      const a = anchors[i], aOpen = { x:a.x, y:a.y, w:a.w*1.14, h:a.h*1.14 };
+      const items = solve((kx, ky) => slots(a, { rx:ringOpen.rx*kx, ry:ringOpen.ry*ky }, cat.options.length).map((s, j) => {
+        const o = cat.options[j];
+        return { o, cat, x:s.x, y:s.y, x0:s.x, y0:s.y, w:pillWidth(o.label,'open') * 1.08, h:PILL.open.h * 1.08 };   // x1.08: open pills sit nearer to the viewer in 3D and look bigger
+      }), [aOpen, ...blocked], bounds);
+      items.forEach(it => { it.o.p1 = toU(it); });
+      openItems[cat.id] = items;
+      cat.base = toU(a);
+    });
+
+    // hover zones = the cluster's pill bounding box plus a margin (bigger while it is open)
+    function zoneOf(items, a, margin){
+      let x0 = a.x - a.w/2, x1 = a.x + a.w/2, y0 = a.y - a.h/2, y1 = a.y + a.h/2;
+      items.forEach(it => { x0 = Math.min(x0, it.x - it.w/2); x1 = Math.max(x1, it.x + it.w/2); y0 = Math.min(y0, it.y - it.h/2); y1 = Math.max(y1, it.y + it.h/2); });
+      const c = toU({ x:(x0+x1)/2, y:(y0+y1)/2 });
+      return { cx:c.x, cy:c.y, hx:(x1-x0+2*margin)/2 * W/fw, hy:(y1-y0+2*margin)/2 * H/fh };
+    }
+    CATEGORIES.forEach((cat, i) => {
+      cat.zone0 = zoneOf(closedItems.filter(it => it.cat === cat), anchors[i], 14);
+      cat.zone1 = zoneOf(openItems[cat.id], anchors[i], 64);
+    });
+
+    const hu = toU(hubPx);
+    HUB.x = hu.x; HUB.y = hu.y;
+    if(hubEl){ hubEl.style.left = pct(HUB.x, W); hubEl.style.top = pct(HUB.y, H); }
+  }
 
   const optionIndex = {}; // optId -> {opt, cat}
   CATEGORIES.forEach(cat => cat.options.forEach(opt => { optionIndex[opt.id] = {opt, cat}; }));
@@ -746,60 +968,93 @@
       <span>${c.labelKo}</span>
       <span class="w-2 h-2 rounded-full" style="background:${c.color}"></span>
     </div>
-  `).join('') + `<div class="flex items-center gap-1.5 text-[10px] text-gray-600 mt-1"><span>어울리는 조합</span><span style="width:14px;height:0;border-top:1.5px dashed #f5e6c8;display:inline-block;"></span></div>`;
+  `).join('') + `<div class="flex items-center gap-1.5 text-[10px] text-gray-600 mt-1"><span>어울리는 조합 (호버 시)</span><span style="width:16px;height:0;border-top:1.5px solid #cfc6bd;display:inline-block;opacity:.8;"></span></div>`;
 
   // ---------- graph lines (SVG) ----------
   const svg = document.getElementById('graphLines');
-  function curvePath(x1,y1,x2,y2,bend){
-    const mx=(x1+x2)/2, my=(y1+y2)/2;
-    const dx=x2-x1, dy=y2-y1;
-    const len = Math.hypot(dx,dy) || 1;
-    const nx=-dy/len, ny=dx/len;
-    const cx=mx+nx*len*bend, cy=my+ny*len*bend;
-    return `M ${x1},${y1} Q ${cx},${cy} ${x2},${y2}`;
+  const plane = document.getElementById('plane');
+  const nodesLayer = document.getElementById('nodesLayer');
+  let links = [];   // cross-links: {path, a:{opt,cat}, b:{opt,cat}, rec, bend}
+
+  // cubic Bezier; s = +1 bends into a C, s = -1 into a gentle S
+  function bezier(x1,y1,x2,y2,k,s){
+    const dx = x2-x1, dy = y2-y1, len = Math.hypot(dx,dy) || 1, nx = -dy/len, ny = dx/len;
+    const c1x = x1 + dx*0.33 + nx*len*k, c1y = y1 + dy*0.33 + ny*len*k;
+    const c2x = x1 + dx*0.66 + nx*len*k*s, c2y = y1 + dy*0.66 + ny*len*k*s;
+    return `M ${x1},${y1} C ${c1x},${c1y} ${c2x},${c2y} ${x2},${y2}`;
   }
+
   function renderLines(){
     svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
     svg.setAttribute('preserveAspectRatio','none');
     let html = '';
     CATEGORIES.forEach(cat => {
-      html += `<path d="${curvePath(CX,CY,cat.pos.x,cat.pos.y,0)}" fill="none" stroke="${cat.color}" stroke-width="1.6" stroke-opacity="0.3"/>`;
-      cat.options.forEach((opt,j) => {
-        html += `<path d="${curvePath(cat.pos.x,cat.pos.y,opt.pos.x,opt.pos.y, j%2?0.08:-0.08)}" fill="none" stroke="${cat.color}" stroke-width="1.2" stroke-opacity="0.22"/>`;
-      });
+      html += `<path class="edge edge-trunk" data-hub="${cat.id}"/>`;
+      cat.options.forEach(o => { html += `<path class="edge edge-spoke" data-spoke="${o.id}"/>`; });
     });
-    CROSS_LINKS.forEach(([aId,bId]) => {
-      const a = optionIndex[aId], b = optionIndex[bId];
-      if(!a || !b) return;
-      html += `<path d="${curvePath(a.opt.pos.x,a.opt.pos.y,b.opt.pos.x,b.opt.pos.y, 0.22)}" fill="none" stroke="#f5e6c8" stroke-width="1.3" stroke-opacity="0.4" stroke-dasharray="5 5"/>`;
+    CROSS_LINKS.forEach(([aId,bId,kind], k) => {
+      html += `<path class="edge edge-link${kind === 'rec' ? ' is-rec' : ''}" data-link="${k}" pathLength="1"/>`;
     });
     svg.innerHTML = html;
+    CATEGORIES.forEach(cat => {
+      cat.hubPath = svg.querySelector(`[data-hub="${cat.id}"]`);
+      cat.options.forEach((o, j) => {
+        o.spoke = svg.querySelector(`[data-spoke="${o.id}"]`);
+        o.spokeBend = (j % 2 ? 1 : -1) * 0.09;
+      });
+    });
+    links = CROSS_LINKS.map(([aId,bId,kind], k) => {
+      const a = optionIndex[aId], b = optionIndex[bId];
+      if(!a || !b) return null;
+      return { path: svg.querySelector(`[data-link="${k}"]`), a, b, rec: kind === 'rec', bend:(k % 2 ? 1 : -1) * 0.2 };
+    }).filter(Boolean);
   }
 
-  // ---------- graph nodes ----------
+  // ---------- focus / hover state ----------
   const graphField = document.getElementById('graphField');
+  let pinnedCat = null;   // opened by click, stays open
+  let hoveredCat = null;  // opened by hover, follows the cursor
+  let hoverNode = null;   // the node under the cursor: {kind:'hub'|'cat'|'leaf', id}
+  function effectiveFocus(){ return hoveredCat || pinnedCat; }
+  function togglePin(catId){ pinnedCat = (pinnedCat === catId) ? null : catId; updateFocusVisuals(); }
+
+  // ---------- graph nodes ----------
   function renderNodes(){
-    let html = `<div class="hub-bubble bubble">IMAGE CREATOR</div>`;
+    let html = `<div class="hub-bubble bubble" id="hubBubble" style="left:${pct(HUB.x,W)}; top:${pct(HUB.y,H)};">IMAGE CREATOR</div>`;
     CATEGORIES.forEach(cat => {
       html += `
-        <div class="cat-anchor bubble" style="left:${pct(cat.pos.x,W)}; top:${pct(cat.pos.y,H)}; color:${cat.color}; border-color:${cat.color}66;">
+        <div class="cat-anchor bubble" data-cat-anchor="${cat.id}" style="color:${cat.color}; --catglow:${cat.color}77;">
           <span class="cat-dot" style="background:${cat.color}"></span>${cat.labelEn}
         </div>`;
       cat.options.forEach(opt => {
         html += `
-          <button class="leaf-bubble bubble" data-opt-node data-cat="${cat.id}" data-opt="${opt.id}"
-                  style="left:${pct(opt.pos.x,W)}; top:${pct(opt.pos.y,H)}; background:#18181b; --glow:${opt.gradient[0]}aa;">
-            ${opt.label}
+          <button class="leaf" data-opt-node data-cat="${cat.id}" data-opt="${opt.id}"
+                  style="--dotb:${cat.color};">
+            <span class="leaf-label"><i class="ld" style="background:${cat.color}; color:${cat.color}"></i>${opt.label}</span>
           </button>`;
       });
     });
-    graphField.innerHTML = html;
+    nodesLayer.innerHTML = html;
 
-    graphField.querySelectorAll('[data-opt-node]').forEach(btn => {
-      btn.addEventListener('mouseenter', (e) => showImgPopover(e, btn.dataset.cat, btn.dataset.opt));
+    const hub = document.getElementById('hubBubble');
+    hub.addEventListener('click', (e) => { e.stopPropagation(); pinnedCat = null; updateFocusVisuals(); });
+    hub.addEventListener('mouseenter', () => setHoverNode({kind:'hub'}));
+    hub.addEventListener('mouseleave', () => setHoverNode(null));
+
+    CATEGORIES.forEach(cat => {
+      cat.el = nodesLayer.querySelector(`[data-cat-anchor="${cat.id}"]`);
+      cat.el.addEventListener('click', (e) => { e.stopPropagation(); togglePin(cat.id); });
+      cat.el.addEventListener('mouseenter', () => setHoverNode({kind:'cat', id:cat.id}));
+      cat.el.addEventListener('mouseleave', () => setHoverNode(null));
+      cat.options.forEach(o => { o.el = nodesLayer.querySelector(`[data-opt="${o.id}"]`); });
+    });
+
+    nodesLayer.querySelectorAll('[data-opt-node]').forEach(btn => {
+      btn.addEventListener('mouseenter', (e) => { showImgPopover(e, btn.dataset.cat, btn.dataset.opt); setHoverNode({kind:'leaf', id:btn.dataset.opt}); });
       btn.addEventListener('mousemove', (e) => moveImgPopover(e));
-      btn.addEventListener('mouseleave', hideImgPopover);
-      btn.addEventListener('click', () => {
+      btn.addEventListener('mouseleave', () => { hideImgPopover(); setHoverNode(null); });
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         toggleOption(btn.dataset.cat, btn.dataset.opt);
         btn.classList.remove('bubble-pop');
         void btn.offsetWidth;
@@ -807,21 +1062,180 @@
       });
       btn.addEventListener('animationend', (e) => { if(e.animationName === 'bubblePop') btn.classList.remove('bubble-pop'); });
     });
+
+    computeLayout();
+    renderFrame();
+    updateFocusVisuals();
+    refreshSelectionVisuals();
+    if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => { computeLayout(); renderFrame(); });
   }
 
+  // ---------- bloom animation: positions are driven by cat.expand (0..1) ----------
+  function smooth(v){ return v*v*(3-2*v); }
+  function renderFrame(){
+    CATEGORIES.forEach(cat => {
+      const e = smooth(cat.expand);
+      cat.cur.x = cat.base.x + cat.shift.x * e;
+      cat.cur.y = cat.base.y + cat.shift.y * e;
+      cat.el.style.left = pct(cat.cur.x, W);
+      cat.el.style.top = pct(cat.cur.y, H);
+      cat.hubPath.setAttribute('d', bezier(HUB.x, HUB.y, cat.cur.x, cat.cur.y, 0.1, -1));
+      cat.options.forEach(o => {
+        o.cur.x = o.p0.x + (o.p1.x - o.p0.x) * e + cat.shift.x * e;
+        o.cur.y = o.p0.y + (o.p1.y - o.p0.y) * e + cat.shift.y * e;
+        o.el.style.left = pct(o.cur.x, W);
+        o.el.style.top = pct(o.cur.y, H);
+        o.spoke.setAttribute('d', bezier(cat.cur.x, cat.cur.y, o.cur.x, o.cur.y, o.spokeBend, -1));
+      });
+    });
+    links.forEach(l => { if(l.live) updateLinkPath(l); });   // hidden cross-links are skipped
+  }
+  function updateLinkPath(l){
+    l.path.setAttribute('d', bezier(l.a.opt.cur.x, l.a.opt.cur.y, l.b.opt.cur.x, l.b.opt.cur.y, l.bend, 1));
+  }
+
+  let animRaf = null, lastT = 0;
+  function tick(now){
+    const dt = Math.min(0.05, (now - lastT) / 1000 || 0.016);
+    lastT = now;
+    const focus = effectiveFocus();
+    let moving = false;
+    CATEGORIES.forEach(cat => {
+      const target = focus === cat.id ? 1 : 0;
+      const d = target - cat.expand;
+      if(Math.abs(d) > 0.003){ cat.expand += d * (1 - Math.exp(-dt * 9)); moving = true; }
+      else cat.expand = target;
+    });
+    renderFrame();
+    animRaf = moving ? requestAnimationFrame(tick) : null;
+  }
+  function kick(){
+    if(animRaf) return;
+    lastT = performance.now();
+    animRaf = requestAnimationFrame(tick);
+  }
+
+  function updateFocusVisuals(){
+    const focus = effectiveFocus();
+    graphField.classList.toggle('has-focus', !!focus);
+    CATEGORIES.forEach(cat => {
+      const on = focus === cat.id;
+      cat.el.classList.toggle('is-focused', on);
+      cat.options.forEach(o => o.el.classList.toggle('is-open', on));
+    });
+    applyEdgeStates();
+    kick();
+  }
+
+  function setHoverNode(n){ hoverNode = n; applyEdgeStates(); }
+
+  // Edges stay almost invisible until a node is hovered: then that node's own curves light up,
+  // and for an option its cross-links draw in toward the partner options, which glow too.
+  function applyEdgeStates(){
+    const focus = effectiveFocus();
+    svg.querySelectorAll('.edge.is-lit, .edge.is-soft').forEach(p => p.classList.remove('is-lit','is-soft'));
+    const partners = new Set();
+    if(focus){
+      const c = categoryById(focus);
+      c.hubPath.classList.add('is-soft');
+      c.options.forEach(o => o.spoke.classList.add('is-soft'));
+    }
+    if(hoverNode){
+      if(hoverNode.kind === 'hub'){
+        CATEGORIES.forEach(c => c.hubPath.classList.add('is-lit'));
+      } else if(hoverNode.kind === 'cat'){
+        const c = categoryById(hoverNode.id);
+        c.hubPath.classList.add('is-lit');
+        c.options.forEach(o => o.spoke.classList.add('is-soft'));
+      } else if(hoverNode.kind === 'leaf'){
+        const {opt, cat} = optionIndex[hoverNode.id];
+        cat.hubPath.classList.add('is-soft');
+        opt.spoke.classList.add('is-lit');
+        links.forEach(l => {
+          if(l.a.opt.id === hoverNode.id || l.b.opt.id === hoverNode.id){
+            l.live = true;
+            updateLinkPath(l);
+            l.path.classList.add('is-lit');
+            partners.add(l.a.opt.id === hoverNode.id ? l.b.opt.id : l.a.opt.id);
+          }
+        });
+      }
+    }
+    // a link that just faded out keeps updating until its fade-out has finished
+    links.forEach(l => {
+      if(l.path.classList.contains('is-lit')){ l.live = true; clearTimeout(l.offTimer); l.offTimer = null; }
+      else if(l.live && !l.offTimer){ l.offTimer = setTimeout(() => { l.live = false; l.offTimer = null; }, 900); }
+    });
+    CATEGORIES.forEach(cat => cat.options.forEach(o => o.el.classList.toggle('is-partner', partners.has(o.id))));
+  }
+
+  // hover zones: a closed cluster opens when the cursor nears it, and an open one stays
+  // open while the cursor is anywhere within its (larger) ring — not only over a bubble
+  function toVirtual(clientX, clientY){
+    const fr = graphField.getBoundingClientRect();
+    return { x: (clientX - fr.left) / fr.width * W, y: (clientY - fr.top) / fr.height * H };
+  }
+  function zoneDist(cat, p){
+    const z = effectiveFocus() === cat.id ? cat.zone1 : cat.zone0;
+    return Math.max(Math.abs(p.x - z.cx) / z.hx, Math.abs(p.y - z.cy) / z.hy);   // <= 1 means inside
+  }
+
+  // 3D parallax: the whole plane leans toward the cursor; layers at different translateZ
+  // (background glow < edges < hub < categories < open options) separate as it tilts
+  const reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  const tilt = { rx:0, ry:0, tx:0, ty:0, raf:null };
+  function tiltTick(){
+    tilt.rx += (tilt.tx - tilt.rx) * 0.09;
+    tilt.ry += (tilt.ty - tilt.ry) * 0.09;
+    plane.style.transform = `rotateX(${tilt.rx.toFixed(3)}deg) rotateY(${tilt.ry.toFixed(3)}deg)`;
+    if(Math.abs(tilt.tx - tilt.rx) > 0.01 || Math.abs(tilt.ty - tilt.ry) > 0.01) tilt.raf = requestAnimationFrame(tiltTick);
+    else tilt.raf = null;
+  }
+  function setTilt(nx, ny){
+    if(reduceMotion) return;
+    tilt.ty = nx * 6;
+    tilt.tx = -ny * 4.5;
+    if(!tilt.raf) tilt.raf = requestAnimationFrame(tiltTick);
+  }
+
+  graphField.addEventListener('mousemove', (e) => {
+    const fr = graphField.getBoundingClientRect();
+    setTilt(((e.clientX - fr.left) / fr.width) * 2 - 1, ((e.clientY - fr.top) / fr.height) * 2 - 1);
+
+    const p = toVirtual(e.clientX, e.clientY);
+    let best = null, bestD = Infinity;
+    CATEGORIES.forEach(cat => { const d = zoneDist(cat, p); if(d <= 1 && d < bestD){ best = cat; bestD = d; } });
+    const next = best ? best.id : null;
+    if(hoveredCat !== next){ hoveredCat = next; updateFocusVisuals(); }
+  });
+  graphField.addEventListener('mouseleave', () => {
+    setTilt(0, 0);
+    if(hoveredCat){ hoveredCat = null; updateFocusVisuals(); }
+  });
+  graphField.addEventListener('click', () => { pinnedCat = null; updateFocusVisuals(); });
+  // re-solve the layout whenever the canvas gets (or changes) its size — including the first time
+  // it gets one, which can be after the script has already run
+  let layoutRaf = null;
+  function scheduleLayout(){
+    if(layoutRaf) return;
+    layoutRaf = requestAnimationFrame(() => { layoutRaf = null; computeLayout(); renderFrame(); });
+  }
+  if(window.ResizeObserver) new ResizeObserver(scheduleLayout).observe(graphField);
+  else window.addEventListener('resize', scheduleLayout);
+
   function refreshSelectionVisuals(){
-    graphField.querySelectorAll('[data-opt-node]').forEach(btn => {
+    nodesLayer.querySelectorAll('[data-opt-node]').forEach(btn => {
       const isSel = (selected[btn.dataset.cat]||[]).some(o => o.id === btn.dataset.opt);
       btn.classList.toggle('is-selected', isSel);
-      const cat = categoryById(btn.dataset.cat);
-      if(isSel){
-        btn.style.background = `linear-gradient(135deg, ${cat.color}40, rgba(255,255,255,0.07))`;
-        btn.style.borderColor = cat.color;
-        btn.style.color = '#fff';
-      } else {
-        btn.style.background = '#18181b';
-        btn.style.borderColor = '#2a2a2e';
-        btn.style.color = '#e5e5e5';
+    });
+    CATEGORIES.forEach(cat => {
+      const count = (selected[cat.id]||[]).length;
+      let badge = cat.el.querySelector('.cat-badge');
+      if(count > 0){
+        if(!badge){ badge = document.createElement('span'); badge.className = 'cat-badge'; cat.el.appendChild(badge); }
+        badge.textContent = count;
+      } else if(badge){
+        badge.remove();
       }
     });
   }
@@ -831,6 +1245,7 @@
   const imgSwatch = document.getElementById('imgSwatch');
   const imgCat = document.getElementById('imgPopoverCat');
   const imgLabel = document.getElementById('imgPopoverLabel');
+  const imgDesc = document.getElementById('imgPopoverDesc');
 
   function positionPopoverAt(x, y){
     const halfW = 110;
@@ -849,6 +1264,7 @@
     imgCat.textContent = cat.labelKo;
     imgCat.style.color = cat.color;
     imgLabel.textContent = opt.label;
+    imgDesc.textContent = opt.desc || '';
     positionPopoverAt(e.clientX, e.clientY);
     imgPopover.classList.add('is-visible');
   }
