@@ -219,19 +219,68 @@
   .slot{ flex:1 1 0; min-width:0; display:flex; flex-direction:column; }
   .slot-label{ display:flex; align-items:center; justify-content:space-between; gap:4px; font-size:10px; color:#8b8b93; margin-bottom:5px; white-space:nowrap; }
   .slot-req{ font-weight:600; color:#f5c07a; font-size:9px; }
-  .slot-badge{ font-size:9px; padding:0 6px; border-radius:9999px; background:rgba(245,192,122,.16); color:#f5c07a; }
-  .slot-drop{ position:relative; flex:1; border:1px dashed #3a3a40; border-radius:12px; background:rgba(0,0,0,.2); display:flex; align-items:center; justify-content:center; text-align:center; cursor:pointer; overflow:hidden; transition:border-color .2s ease; }
-  .slot-drop:hover, .slot-drop.is-over{ border-color:#6a6a74; }
+  /* each input image has its own colour (--slot-color); the same colour marks its section in the prompt */
+  .slot{ --slot-color:#7dd3fc; }
+  .slot-dot{ display:inline-block; width:6px; height:6px; margin-right:6px; border-radius:50%; background:var(--slot-color); box-shadow:0 0 6px var(--slot-color); vertical-align:1px; }
+  .slot-badge{ font-size:9px; padding:0 6px; border-radius:9999px; background:color-mix(in srgb, var(--slot-color) 18%, transparent); color:var(--slot-color); }
+  .slot-drop{ position:relative; flex:1; border:1px dashed color-mix(in srgb, var(--slot-color) 40%, #3a3a40); border-radius:12px; background:rgba(0,0,0,.2); display:flex; align-items:center; justify-content:center; text-align:center; cursor:pointer; overflow:hidden; transition:border-color .2s ease, box-shadow .25s ease; }
+  .slot.has-img .slot-drop{ border-style:solid; border-color:color-mix(in srgb, var(--slot-color) 62%, transparent); }
+  .slot-drop:hover, .slot-drop.is-over{ border-color:var(--slot-color); }
+  .slot.is-hl .slot-drop{ border-color:var(--slot-color); box-shadow:0 0 0 1px var(--slot-color), 0 0 18px color-mix(in srgb, var(--slot-color) 45%, transparent); }
   .slot-empty{ font-size:10.5px; color:#6b7280; line-height:1.4; padding:0 6px; }
   .slot-empty small{ display:block; color:#4b5563; font-size:9.5px; margin-top:3px; }
   .slot-preview{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
   .slot-clear{ position:absolute; top:4px; right:4px; width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,.65); color:#fff; font-size:9px; display:flex; align-items:center; justify-content:center; }
   .slot-clear:hover{ background:rgba(0,0,0,.85); }
+  .slot-mode{ margin-top:5px; align-self:flex-start; font-size:9.5px; line-height:1; padding:4px 8px; border-radius:9999px; border:1px solid #33333a; color:#9b9ba3; white-space:nowrap; }
+  .slot-mode:hover{ color:#fff; border-color:#555; }
+  .slot-mode.is-text{ color:var(--slot-color); border-color:color-mix(in srgb, var(--slot-color) 45%, transparent); background:color-mix(in srgb, var(--slot-color) 8%, transparent); }
+
+  /* prompt sections that come from an input image: tinted with its colour, lit up together with its slot */
+  .prompt-section[data-slot]{ color:var(--slot-color); }
+  #promptBox .is-hl{ background:color-mix(in srgb, var(--slot-color) 13%, transparent); border-radius:4px; }
+
+  /* ---------- workflow stepper ---------- */
+  .stepper{ display:flex; align-items:center; gap:3px; margin-top:9px; flex-wrap:nowrap; }
+  .step{ display:inline-flex; align-items:center; gap:6px; font-size:11px; color:#6b7280; padding:3px 9px 3px 4px; border-radius:9999px; border:1px solid transparent; white-space:nowrap; transition:color .25s ease, background .25s ease, border-color .25s ease; }
+  .step:hover{ color:#d4d4d8; }
+  .step.is-current{ color:#f5e6cf; border-color:rgba(245,192,122,.35); background:rgba(245,192,122,.08); }
+  .step.is-done{ color:#9ca3af; }
+  .step-sep{ width:9px; height:1px; background:#3a3a40; flex:none; }
+  .step-no{ display:inline-flex; align-items:center; justify-content:center; flex:none; width:16px; height:16px; border-radius:50%; font-size:9.5px; font-weight:600; line-height:1; color:#8b8b93; border:1px solid #3a3a40; background:rgba(255,255,255,.04); transition:all .25s ease; }
+  .step-no.is-current{ color:#0b0b0d; background:#f5c07a; border-color:#f5c07a; animation:stepPulse 2.4s ease-in-out infinite; }
+  .step-no.is-done{ color:#6ee7b7; background:rgba(110,231,183,.14); border-color:rgba(110,231,183,.55); }
+  .step-no.is-done > span{ display:none; }
+  .step-no.is-done::after{ content:'✓'; font-size:10px; }
+  .step-no.on-btn{ position:absolute; left:10px; top:50%; transform:translateY(-50%); pointer-events:none; color:#f5c07a; background:rgba(11,11,13,.82); border-color:transparent; animation:none; }
+  .step-no.on-btn.is-done{ color:#6ee7b7; }
+  @keyframes stepPulse{ 0%,100%{ box-shadow:0 0 0 2px rgba(245,192,122,.28); } 50%{ box-shadow:0 0 0 5px rgba(245,192,122,.06); } }
+  .area-pulse{ animation:areaPulse 1.4s ease; }
+  @keyframes areaPulse{ 0%{ box-shadow:0 0 0 0 rgba(245,192,122,0); } 25%{ box-shadow:0 0 0 3px rgba(245,192,122,.6), 0 0 28px rgba(245,192,122,.35); } 100%{ box-shadow:0 0 0 0 rgba(245,192,122,0); } }
+  #stepHint{ font-size:12px; color:#8b8b93; margin-top:7px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:420px; }
+  #hubHint{ position:absolute; left:50%; top:calc(50% + 42px); transform:translateX(-50%); z-index:30; pointer-events:none; font-size:11.5px; color:#f5e6cf; padding:6px 13px; border-radius:9999px; white-space:nowrap;
+    background:rgba(245,192,122,.10); border:1px solid rgba(245,192,122,.35); box-shadow:0 6px 24px rgba(0,0,0,.35); transition:opacity .35s ease; }
+  #hubHint.is-off{ opacity:0; }
   .set-select{ background:#1a1a1d; color:#d4d4d8; border:1px solid #33333a; border-radius:8px; font-size:11px; padding:5px 6px; outline:none; width:100%; }
   .set-select:focus{ border-color:#f5c07a; }
   .edge-row{ display:flex; align-items:center; gap:6px; font-size:10.5px; color:#9b9ba3; cursor:pointer; }
   .edge-row input{ accent-color:#f5c07a; }
+  .verdict-chip{ padding:2px 9px; border-radius:9999px; border:1px solid rgba(255,255,255,.14); color:#c9c9d0; background:rgba(255,255,255,.04); white-space:nowrap; }
+  .verdict-chip.is-good{ color:#6ee7b7; border-color:rgba(110,231,183,.45); }
+  .verdict-chip.is-mid{ color:#fcd34d; border-color:rgba(252,211,77,.45); }
+  .verdict-chip.is-low{ color:#fca5a5; border-color:rgba(252,165,165,.45); }
+  button.verdict-chip{ cursor:pointer; }
+  button.verdict-chip:hover{ border-color:rgba(255,255,255,.4); color:#fff; }
+  button.verdict-chip.is-current{ background:rgba(245,192,122,.16); border-color:rgba(245,192,122,.7); color:#fff; }
   .edge-thumb{ height:30px; width:auto; margin-left:auto; border-radius:4px; border:1px solid #33333a; background:#fff; }
+  .edit-field{ outline:none; border-bottom:1px dashed color-mix(in srgb, var(--frag-color, #7dd3fc) 45%, transparent); cursor:text; padding:0 1px; border-radius:2px; }
+  .edit-field:hover{ background:color-mix(in srgb, var(--frag-color, #7dd3fc) 8%, transparent); }
+  .edit-field:focus{ border-bottom-color:var(--frag-color, #7dd3fc); background:color-mix(in srgb, var(--frag-color, #7dd3fc) 14%, transparent); color:#fff; }
+  .prompt-status{ margin-top:8px; padding:6px 10px; border-radius:8px; font-size:11.5px; color:#9bb8c9; background:color-mix(in srgb, var(--slot-color, #7dd3fc) 8%, transparent); border:1px solid color-mix(in srgb, var(--slot-color, #7dd3fc) 22%, transparent); }
+  .prompt-status.is-error{ color:#fca5a5; background:rgba(252,165,165,.07); border-color:rgba(252,165,165,.2); }
+  .prompt-status button{ margin-left:6px; text-decoration:underline; color:inherit; }
+  .spin{ display:inline-block; width:9px; height:9px; margin-right:8px; border-radius:50%; border:1.5px solid color-mix(in srgb, var(--slot-color, #7dd3fc) 35%, transparent); border-top-color:var(--slot-color, #7dd3fc); animation: spinIt .8s linear infinite; vertical-align:-1px; }
+  @keyframes spinIt{ to{ transform:rotate(360deg); } }
   .prompt-title{ color:#e5e5e5; font-weight:600; margin-bottom:4px; }
   .prompt-section{ color:#8b8b93; margin-top:8px; }
   .prompt-lever{ border-left:2px solid var(--frag-color); padding-left:8px; margin-top:3px; color:#c4c4cb; }
@@ -281,7 +330,13 @@
 
     <div id="headerBlock" class="absolute top-6 left-7 z-40 select-none pointer-events-none max-w-[420px]">
       <h1 class="font-display text-xl font-semibold text-[#f2efe9]">Interactive Prompt Builder</h1>
-      <p class="text-[12px] text-gray-500 mt-1">카테고리에 커서를 올리면 펼쳐져요 · 옵션에 호버하면 미리보기와 어울리는 조합이 나타나요 · 클릭으로 선택</p>
+      <div id="stepper" class="stepper pointer-events-auto">
+        <button type="button" class="step" data-step="1"><span class="step-no" data-n="1"><span>1</span></span>이미지 올리기</button><i class="step-sep"></i>
+        <button type="button" class="step" data-step="2"><span class="step-no" data-n="2"><span>2</span></span>옵션 고르기</button><i class="step-sep"></i>
+        <button type="button" class="step" data-step="3"><span class="step-no" data-n="3"><span>3</span></span>프롬프트 확인</button><i class="step-sep"></i>
+        <button type="button" class="step" data-step="4"><span class="step-no" data-n="4"><span>4</span></span>생성</button>
+      </div>
+      <p id="stepHint"></p>
       <div class="flex items-center gap-1.5 flex-wrap mt-2.5 pointer-events-auto">
         <span class="text-[10px] text-gray-600">🔒 레퍼런스 이미지로 고정됨 (변경 불가):</span>
         <span class="locked-chip">설계 의도</span>
@@ -308,6 +363,8 @@
       </div>
     </div>
 
+    <div id="hubHint" class="is-off"></div>
+
     <div id="imgPopover">
       <div id="imgSwatch" class="w-full"></div>
       <div class="px-3 py-2.5">
@@ -323,17 +380,18 @@
 
     <!-- LEFT: 3 reference image slots (draft / site photo / style reference) -->
     <div class="flex-shrink-0 flex flex-col" style="width:340px;">
-      <div class="text-[10px] tracking-[0.2em] text-gray-500 mb-1.5 font-display">REFERENCE IMAGES</div>
+      <div class="flex items-center gap-1.5 text-[10px] tracking-[0.2em] text-gray-500 mb-1.5 font-display"><span class="step-no" data-n="1"><span>1</span></span>REFERENCE IMAGES</div>
       <div id="slotsWrap" class="flex-1 flex gap-2 min-h-0"></div>
     </div>
 
     <!-- CENTER: chips + assembled prompt -->
     <div class="flex-1 flex flex-col min-w-0 gap-1.5">
       <div class="flex items-center justify-between">
-        <span class="text-[10px] tracking-[0.2em] text-gray-500 font-display">SELECTED</span>
+        <span class="flex items-center gap-1.5 text-[10px] tracking-[0.2em] text-gray-500 font-display"><span class="step-no" data-n="2"><span>2</span></span>SELECTED</span>
         <button id="resetBtn" class="text-[10px] text-gray-500 hover:text-gray-300 underline underline-offset-2">전체 초기화</button>
       </div>
       <div id="chips" class="flex flex-wrap gap-1.5 overflow-y-auto" style="max-height:34px;"></div>
+      <div class="flex items-center gap-1.5 text-[10px] tracking-[0.2em] text-gray-500 font-display"><span class="step-no" data-n="3"><span>3</span></span>PROMPT<span class="tracking-normal text-gray-600 font-sans">· 클릭해서 직접 수정할 수 있어요</span></div>
       <div id="promptBox" class="flex-1 min-h-0 overflow-y-auto rounded-lg border border-[#2a2a2e] bg-black/25 px-3.5 py-2.5 text-[12.5px] leading-relaxed text-gray-300 font-mono"></div>
     </div>
 
@@ -343,18 +401,26 @@
         <button id="copyBtn" class="flex-1 text-[12px] px-3 py-2 rounded-lg border border-[#33333a] text-gray-200 hover:border-[#555] hover:text-white font-display font-medium">Copy Prompt</button>
         <span id="copiedTag" class="hidden text-[10px] text-emerald-400 whitespace-nowrap"></span>
       </div>
-      <button id="generateBtn" class="py-2.5 rounded-lg font-display text-[13px] font-medium text-[#0b0b0d] bg-gradient-to-r from-[#f5c07a] to-[#d9a066] hover:opacity-90 transition-opacity">Generate Mock Result</button>
+      <div class="relative">
+        <span class="step-no on-btn" data-n="4"><span>4</span></span>
+        <button id="generateBtn" class="w-full py-2.5 rounded-lg font-display text-[13px] font-medium text-[#0b0b0d] bg-gradient-to-r from-[#f5c07a] to-[#d9a066] hover:opacity-90 transition-opacity">Generate Mock Result</button>
+      </div>
       <div id="progressWrap" class="hidden h-1.5 rounded-full bg-[#1c1c20] overflow-hidden">
         <div id="progressBar" class="h-full progress-stripes" style="width:0%; background-color:#d9a066;"></div>
       </div>
       <div class="grid grid-cols-2 gap-1.5">
         <select id="modelSelect" class="set-select" title="이미지 모델"></select>
         <select id="sizeSelect" class="set-select" title="해상도"></select>
+        <select id="strengthSelect" class="set-select" style="grid-column:1 / -1;" title="스타일을 얼마나 강하게 입힐지. 약할수록 형태·구도가 더 확실히 유지됩니다"></select>
       </div>
       <label class="edge-row" title="초안에서 윤곽선 이미지를 자동으로 만들어, 형태·위치·구도를 따라 그리도록 함께 보냅니다">
         <input id="edgeToggle" type="checkbox" />
-        <span>구조 가이드(엣지맵) 첨부</span>
+        <span id="edgeLabel">구조 가이드(엣지맵) 첨부</span>
         <img id="edgeThumb" class="edge-thumb hidden" alt="" />
+      </label>
+      <label class="edge-row" title="생성 후 결과의 윤곽선을 초안과 비교합니다. 일치도가 낮으면 최대 3번까지 자동으로 다시 생성하고, 가장 잘 맞는 결과를 보여줍니다 (API 호출이 늘어납니다)">
+        <input id="verifyToggle" type="checkbox" />
+        <span>구조 일치 검증 · 자동 재시도</span>
       </label>
     </div>
   </div>
@@ -400,6 +466,7 @@
         <div class="ratio-box rounded-xl overflow-hidden border border-[#2a2a2e] flex items-center justify-center" id="resultAfter">
           <span class="text-[11px] text-gray-600 px-3 text-center">Generate를 누르면<br/>결과가 나타나요</span>
         </div>
+        <div id="resultVerdict" class="mt-2 text-[10.5px]" style="display:none; flex-wrap:wrap; align-items:center; gap:6px;"></div>
       </div>
     </div>
   </div>
@@ -453,6 +520,12 @@
   // section order in the assembled prompt
   const LEVER_ORDER = ['lighting','atmosphere','style'];
   const SECTION_TITLES = { lighting:'[Lighting]', atmosphere:'[Atmosphere]', style:'[Style]' };
+  // a Style option changes how the picture is finished, never what is in it — the strength setting says how far
+  const STYLE_STRENGTH_INTRO = {
+    subtle:   d => `Apply the style below only as a light finishing layer on top of Image ${d}. The result must still read as the same picture as Image ${d}, aligned line for line: every edge, shape and proportion stays exactly where it is. Shift the color tone, texture and finish only slightly; do not re-draw, re-interpret or change the medium of the image.`,
+    balanced: d => `Apply the style below to the surface finish, tone and texture of the elements that already exist in Image ${d}. Every form, edge and proportion stays exactly where it is; the style must not add, remove, move or reshape anything.`,
+    strong:   d => `Apply the style below fully and boldly to the look of the image. Even so, the geometry is locked: the outlines, forms, positions and framing of Image ${d} stay identical, and the style is expressed only through rendering, tone, texture and line quality.`,
+  };
 
   // A 3-word fragment leaves the model too much room to reinterpret, so every
   // option expands into a full descriptive sentence (light direction, shadow
@@ -472,13 +545,13 @@
     'atmo-biophilic':  'A lush, biophilic feeling: the vegetation already in the scene looks richer, fresher and healthier, feeling naturally integrated with the built forms, softening edges and adding living, organic color. Do not add or move objects.',
     'atmo-misty':      'A misty morning atmosphere: dewy, moist air, a soft haze, cool and gentle color and a calm, minimal feel with muted contrast.',
     'atmo-vibrant':    'A lively, inviting courtyard-like mood with richer color saturation and a warm sense of human presence, as a place where people gather. Do not add new objects or people.',
-    'style-photo':     'Editorial architectural photography in the manner of Architectural Digest: a refined, high-resolution, photorealistic finish with a clean, detailed look, balanced exposure and a natural color grade. Give the existing surfaces real material texture and a natural response to light — the grain of stone, wood and fabric, the finish of metal and glass, wherever those materials appear — clearly resolved. This changes surface finish only, never the geometry or the framing.',
-    'style-brutalist': 'A brutalist raw-concrete rendering: concrete surfaces show visible formwork marks, board-marked grain, tie holes and subtle weathering, with heavy, tactile realism. Apply this texture to the existing surfaces only, without changing any geometry.',
-    'style-medit':     'A minimalist Mediterranean, contemporary-resort look: bright limestone surfaces and warm timber louvers where the surfaces allow, clean, airy, sun-washed and refined. Express this through surface materials and finish only; do not add or change any element or geometry.',
-    'style-cinematic': 'A cinematic, dramatic look like a still from a film: deep ambient occlusion in corners and recesses, strong tonal contrast, rich shadows and a cohesive graded color palette.',
-    'style-collage':   'A poetic architectural collage, post-digital mood in the manner of David Chipperfield or Pezo von Ellrichshausen visualizations: muted, softly layered tones with a painterly, slightly cut-and-pasted feel, a pale gentle palette and a quiet emotional atmosphere, while keeping every form and its position exactly as in the reference.',
-    'style-lineart':   'A minimal diagram-style rendering that emphasizes structure and line: clean, fine, consistent linework, minimal flat tonal fills and generous white space, keeping every form exactly in place.',
-    'style-watercolor':'A textured watercolor concept-sketch look: warm watercolor pigment soaking into paper, translucent washes, soft pigment blooms and delicate pencil linework, like an early-stage concept sketch, keeping every form and proportion exactly as in the reference.',
+    'style-photo':     'Editorial architectural photography in the manner of Architectural Digest: a refined, high-resolution, photorealistic finish with a clean, detailed look, balanced exposure and a natural color grade. Give the existing surfaces real material texture and a natural response to light — the grain of stone, wood and fabric, the finish of metal and glass, wherever those materials already appear. This changes surface finish only; no shape is redrawn, and the geometry and the framing stay untouched.',
+    'style-brutalist': 'A brutalist raw-concrete finish: concrete surfaces show visible formwork marks, board-marked grain, tie holes and subtle weathering, with heavy, tactile realism. Apply this texture to the existing surfaces only, without changing any geometry.',
+    'style-medit':     'A minimalist Mediterranean, contemporary-resort tone: bright, sun-washed, limestone-like surface color and finish, clean, airy and refined. Express this through the color and finish of the existing surfaces only; do not add, replace or change any element, material object or geometry.',
+    'style-cinematic': 'A cinematic, dramatic color and tone treatment like a still from a film: deep ambient occlusion in corners and recesses, strong tonal contrast, rich shadows and a cohesive graded color palette. This is a grade of the existing image only; no object or shape is added or changed.',
+    'style-collage':   'A poetic, post-digital architectural mood in the manner of David Chipperfield or Pezo von Ellrichshausen visualizations: muted, softly layered tones with a faint painterly, paper-like finish, a pale gentle palette and a quiet emotional atmosphere. It is a tonal and surface treatment only: every form and its position stay exactly as in the reference, and nothing is cut out, moved or rearranged.',
+    'style-lineart':   'A minimal diagram-style rendering that emphasizes structure and line: clean, fine, consistent linework that traces the existing edges exactly, with minimal flat tonal fills. Every form stays in place and stays present — do not omit, simplify away, shift or add any line or shape.',
+    'style-watercolor':'A textured watercolor concept-sketch finish: warm watercolor pigment soaking into paper, translucent washes, soft pigment blooms and delicate pencil linework that follows the existing outlines exactly. Every form and proportion stays exactly as in the reference; the washes fill the existing shapes and never redraw them.',
   };
 
   // curated "goes well together" pairings across categories, drawn as dashed
@@ -685,9 +758,17 @@
     {id:'gemini-3-pro-image',     label:'Pro · 고품질'},
   ];
   const SIZE_OPTIONS = ['1K','2K','4K'];
-  const imageSettings = { model:MODEL_OPTIONS[0].id, size:'2K', edge:true };
+  // how hard the Style options push: weaker = the picture stays closer to the draft
+  const STRENGTH_OPTIONS = [
+    {id:'subtle',   label:'스타일 강도 · 약하게 (구조 최우선)'},
+    {id:'balanced', label:'스타일 강도 · 보통'},
+    {id:'strong',   label:'스타일 강도 · 강하게'},
+  ];
+  const imageSettings = { model:MODEL_OPTIONS[0].id, size:'2K', edge:true, strength:'balanced', verify:true };
   try{
     const saved = JSON.parse(localStorage.getItem(SETTINGS_STORAGE) || 'null');
+    if(saved && typeof saved.verify === 'boolean') imageSettings.verify = saved.verify;
+    if(saved && STRENGTH_OPTIONS.some(s => s.id === saved.strength)) imageSettings.strength = saved.strength;
     if(saved && MODEL_OPTIONS.some(m => m.id === saved.model)) imageSettings.model = saved.model;
     if(saved && SIZE_OPTIONS.includes(saved.size)) imageSettings.size = saved.size;
     if(saved && typeof saved.edge === 'boolean') imageSettings.edge = saved.edge;
@@ -702,6 +783,13 @@
   sizeSelect.value = imageSettings.size;
   modelSelect.addEventListener('change', () => { imageSettings.model = modelSelect.value; saveImageSettings(); });
   sizeSelect.addEventListener('change', () => { imageSettings.size = sizeSelect.value; saveImageSettings(); });
+  const strengthSelect = document.getElementById('strengthSelect');
+  strengthSelect.innerHTML = STRENGTH_OPTIONS.map(s => `<option value="${s.id}">${s.label}</option>`).join('');
+  strengthSelect.value = imageSettings.strength;
+  strengthSelect.addEventListener('change', () => { imageSettings.strength = strengthSelect.value; saveImageSettings(); updatePrompt(); });
+  const verifyToggle = document.getElementById('verifyToggle');
+  verifyToggle.checked = imageSettings.verify;
+  verifyToggle.addEventListener('change', () => { imageSettings.verify = verifyToggle.checked; saveImageSettings(); });
   const edgeToggle = document.getElementById('edgeToggle');
   edgeToggle.checked = imageSettings.edge;
   edgeToggle.addEventListener('change', () => {
@@ -724,6 +812,143 @@
     c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
     return c.toDataURL('image/jpeg', 0.92);
   }
+
+  // ---------- readings: a vision model turns an image into words ----------
+  //   draft -> its form / position / composition: a written anchor for what must not change
+  //   site  -> the real materials and details of the place, as text instead of a second picture
+  //   ref   -> its color grade and light, as text instead of a second picture
+  // Extra pictures pull the composition of the result toward themselves (the site photo's big arch kept
+  // replacing the draft's framing), so the site photo and the style reference are sent as words by
+  // default; a slot can be switched back to sending the picture itself.
+  // Model ids move quickly, so candidates are tried in order and the one that works is remembered.
+  const ANALYSIS_MODELS = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-3.6-flash', 'gemini-2.5-flash'];
+  let analysisModel = null;
+
+  // one colour per input image: its slot, its badge, its section in the prompt and the legend all share it
+  // (cool hues, so they never read as one of the warm Lighting / Atmosphere / Style category colours)
+  const SLOT_COLORS = { draft:'#7dd3fc', site:'#6ee7b7', ref:'#818cf8' };
+  const READINGS = {
+    draft:{
+      section:'Draft Reading', color:SLOT_COLORS.draft,
+      fields:[['form','Form'],['position','Position'],['composition','Composition'],['surroundings','Surroundings']],
+      instruction:`You are reading an architectural concept render (the base image) so that another image model can preserve it exactly while its lighting and materials are changed.
+Describe ONLY the geometry and layout that is visible. Never describe lighting, color mood, weather, atmosphere or style. Be concrete and measurable (counts, angles, proportions, approximate percentages of the frame). Use plain English.
+Return JSON with exactly these four string keys and nothing else:
+{
+  "form": "The main subject (the new building, pavilion, structure or object the design is about): what kind of structure it is, its silhouette, the number and shape of its parts (roof or canopy, supports, cables, panels, base), their proportions and angles, and how it meets the ground. 3-5 sentences.",
+  "position": "Where the main subject sits in the frame (horizontal and vertical position, roughly what percentage of the frame width and height it covers, foreground / midground / background) and where it sits relative to the surrounding structures, ground and objects. 2-4 sentences.",
+  "composition": "The camera and framing: viewpoint height and direction, perspective type; how the frame is built (for example an arch or opening framing the view, and its size and position in the frame), where the walls, windows, ground plane and horizon line are, symmetry and dominant lines. 3-5 sentences.",
+  "surroundings": "Everything else that is in the frame and must stay: the walls and openings around the main subject, the ground surface and what lies on it (paving, sand, gravel, rocks, planters, furniture, people), each with its approximate position and size. Also state what is NOT present (for example: no grass, no trees, no potted plants) so that nothing is added. 3-5 sentences."
+}`,
+    },
+    site:{
+      section:'Real Site Details', color:SLOT_COLORS.site,
+      fields:[['surfaces','Wall surfaces'],['openings','Window & door finish'],['ground','Paving material']],
+      instruction:`You are reading a photo of a real location so that an image model can copy the MATERIAL LOOK of its surfaces onto a different picture that already has its own layout.
+Describe ONLY the material and finish of surfaces: color, grain, texture, weathering, staining, joint pattern. Do NOT describe what the scene contains or how it is arranged: no plants, trees, grass, planters, furniture or other objects, no counts, no positions, no number or arrangement of windows or arches, no camera, framing, composition, lighting or weather. If something is not a surface material, leave it out. Use plain English.
+Return JSON with exactly these three string keys and nothing else:
+{
+  "surfaces": "The wall material: the type of stone, plaster or render, its color range, grain, weathering, staining, joint lines and trim finish. 2-3 sentences.",
+  "openings": "The finish of window and door elements only: frame and shutter material and color, glazing style, stone surround finish. No counts or positions. 1-2 sentences.",
+  "ground": "The paving material only: the type of stone or cobble, its color, size, joint pattern and wear. 1-2 sentences."
+}`,
+    },
+    ref:{
+      section:'Style Reading', color:SLOT_COLORS.ref,
+      fields:[['palette','Palette'],['light','Light'],['mood','Mood']],
+      instruction:`You are reading a reference photo so that an image model can reproduce its COLOR GRADE and LIGHT on a different scene.
+Describe ONLY color and light qualities. Do NOT describe objects, architecture, composition or layout. Use plain English.
+Return JSON with exactly these three string keys and nothing else:
+{
+  "palette": "The dominant hues and how they relate (name the colors and give approximate hex codes), warmth, saturation and contrast, and the color of the shadows and of the highlights. 2-4 sentences.",
+  "light": "Light direction and height, hardness or softness, color temperature, shadow length and edge quality, the sky and haze condition, any glow or rim light. 2-4 sentences.",
+  "mood": "The overall mood and grade: film-like or natural, clean or hazy, vintage or modern, tonal balance. 1-3 sentences."
+}`,
+    },
+  };
+  const readings = {};
+  Object.keys(READINGS).forEach(k => { readings[k] = { status:'idle', values:{}, error:'', edited:false, token:0, pending:null }; });
+  const slotMode = { site:'text', ref:'text' };   // 'text' = send the reading, 'image' = send the picture itself
+
+  function parseJsonLoose(text){
+    const t = String(text || '').replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+    try{ return JSON.parse(t); }catch(e){}
+    const m = t.match(/\{[\s\S]*\}/);
+    if(m){ try{ return JSON.parse(m[0]); }catch(e){} }
+    throw new Error('분석 결과를 읽지 못했어요');
+  }
+
+  async function callGeminiVisionJson(parts, apiKey){
+    const list = analysisModel ? [analysisModel, ...ANALYSIS_MODELS.filter(m => m !== analysisModel)] : ANALYSIS_MODELS;
+    let lastErr = null;
+    for(const model of list){
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
+      let res;
+      try{
+        res = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ contents:[{parts}], generationConfig:{ responseMimeType:'application/json', temperature:0.2 } }) });
+      }catch(e){ throw new Error('네트워크/CORS 오류로 호출 실패'); }
+      if(res.ok){ analysisModel = model; return res.json(); }
+      let msg = `HTTP ${res.status}`;
+      try{ const j = await res.json(); if(j.error && j.error.message) msg = j.error.message; }catch(e){}
+      // unknown / unsupported model id -> try the next candidate; anything else (key, quota…) is final
+      if(res.status === 404 || /not found|not supported|is not supported|unknown model/i.test(msg)){ lastErr = new Error(msg); continue; }
+      throw new Error(msg);
+    }
+    throw lastErr || new Error('사용할 수 있는 분석 모델을 찾지 못했어요');
+  }
+
+  function resetReading(kind){
+    const r = readings[kind];
+    r.token++;
+    r.status = 'idle'; r.values = {}; r.error = ''; r.edited = false; r.pending = null;
+  }
+  function hasReading(kind){ return READINGS[kind].fields.some(([f]) => (readings[kind].values[f] || '').trim()); }
+  // does this slot want to be read into words? (the draft always does; site / ref only in text mode)
+  function wantsReading(kind){ return !!slotData[kind] && (kind === 'draft' || slotMode[kind] === 'text'); }
+  // is this slot's picture itself sent to the image model?
+  function slotSendsImage(id){
+    if(!slotData[id]) return false;
+    if(id === 'draft' || slotMode[id] === 'image') return true;
+    return readings[id].status === 'error';    // the reading failed -> fall back to the picture
+  }
+
+  function analyzeSlot(kind){
+    const r = readings[kind], def = READINGS[kind];
+    const token = ++r.token;
+    if(!wantsReading(kind)){ r.status = 'idle'; r.pending = null; updateSlotBadges(); updatePrompt(); return; }
+    const key = getApiKey();
+    if(!key){ r.status = 'nokey'; updateSlotBadges(); updatePrompt(); return; }
+    r.status = 'loading'; r.error = '';
+    updateSlotBadges(); updatePrompt();
+    r.pending = (async () => {
+      try{
+        const ready = await prepareForApi(slotData[kind].dataUrl, 1280);
+        const sp = splitDataUrl(ready);
+        const data = await callGeminiVisionJson([{ text: def.instruction }, { inline_data:{ mime_type:sp.mime, data:sp.data } }], key);
+        if(token !== r.token) return;
+        const parts = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) || [];
+        const text = parts.map(p => p.text || '').join('');
+        if(!text.trim()){
+          const block = data.promptFeedback && data.promptFeedback.blockReason;
+          const fin = data.candidates && data.candidates[0] && data.candidates[0].finishReason;
+          throw new Error(block ? `모델이 이미지를 차단했어요 (${block})` : fin && fin !== 'STOP' ? `모델이 답을 내지 않았어요 (${fin})` : '모델이 빈 응답을 보냈어요');
+        }
+        const obj = parseJsonLoose(text);
+        const clean = v => String(v || '').replace(/\s*\n\s*/g, ' ').trim();
+        r.values = {};
+        def.fields.forEach(([f]) => { r.values[f] = clean(obj[f]); });
+        if(!hasReading(kind)) throw new Error('분석 결과가 비어 있어요');
+        r.status = 'done';
+      }catch(err){
+        if(token !== r.token) return;
+        r.status = 'error'; r.error = err.message || '분석 실패';
+      }
+      if(token === r.token){ r.pending = null; updateSlotBadges(); updatePrompt(); }
+    })();
+  }
+  function pendingReadings(){ return Object.values(readings).map(r => r.pending).filter(Boolean); }
+
 
   // ---------- structure guide: edge map of the draft ----------
   // Washed-out renders hide their structure in a very narrow tonal band, so the guide
@@ -838,6 +1063,94 @@
     return edgeMapFromCanvas(c).toDataURL('image/png');
   }
 
+  // ---------- structure check: how closely does a result keep the draft's lines? ----------
+  // Both pictures go onto the same small grid. Each is reduced to its strongest edges after a local
+  // normalisation (so a change of light, colour or texture barely moves them). Then:
+  //   layout = correlation of coarse edge-density maps  (are the big masses — arch, canopy, walls — in the same places?)
+  //   lines  = tolerant F-score of the edge pixels        (do the lines themselves still fall on the draft's lines?)
+  // Measured on real drafts: re-lit / re-toned copies score 96-100, a 2% shift ~85, a 10% zoom ~73,
+  // and the results that lost the framing (arch enlarged, canopy moved) scored 25-35.
+  const SCORE_GRID = 176;
+  const SCORE_PASS = 70;      // at or above this, a result counts as having kept the structure
+  const MAX_ATTEMPTS = 3;
+  function gridGray(im, gw, gh){
+    const c = document.createElement('canvas'); c.width = gw; c.height = gh;
+    const x = c.getContext('2d', {willReadFrequently:true});
+    x.drawImage(im, 0, 0, gw, gh);
+    const d = x.getImageData(0,0,gw,gh).data, g = new Float32Array(gw*gh);
+    for(let i=0;i<g.length;i++) g[i] = 0.299*d[i*4] + 0.587*d[i*4+1] + 0.114*d[i*4+2];
+    return g;
+  }
+  function boxBlur(src, w, h, r){
+    const tmp = new Float32Array(w*h), out = new Float32Array(w*h);
+    for(let y=0;y<h;y++){ let s = 0, n = 0;
+      for(let x=-r;x<=r;x++){ if(x>=0 && x<w){ s += src[y*w+x]; n++; } }
+      for(let x=0;x<w;x++){ tmp[y*w+x] = s/n;
+        const a = x-r, b = x+r+1;
+        if(a>=0){ s -= src[y*w+a]; n--; } if(b<w){ s += src[y*w+b]; n++; } } }
+    for(let x=0;x<w;x++){ let s = 0, n = 0;
+      for(let y=-r;y<=r;y++){ if(y>=0 && y<h){ s += tmp[y*w+x]; n++; } }
+      for(let y=0;y<h;y++){ out[y*w+x] = s/n;
+        const a = y-r, b = y+r+1;
+        if(a>=0){ s -= tmp[a*w+x]; n--; } if(b<h){ s += tmp[b*w+x]; n++; } } }
+    return out;
+  }
+  function strongEdges(gray, w, h, keep){
+    const mean = boxBlur(gray, w, h, 7);
+    const dev = new Float32Array(w*h);
+    for(let i=0;i<dev.length;i++){ const v = gray[i]-mean[i]; dev[i] = v*v; }
+    const sd = boxBlur(dev, w, h, 7);
+    const norm = new Float32Array(w*h);
+    for(let i=0;i<norm.length;i++) norm[i] = (gray[i]-mean[i]) / (Math.sqrt(sd[i]) + 8);
+    const sm = boxBlur(norm, w, h, 1), mag = new Float32Array(w*h);
+    for(let y=1;y<h-1;y++) for(let x=1;x<w-1;x++){
+      const i = y*w+x;
+      const gx = -sm[i-w-1] - 2*sm[i-1] - sm[i+w-1] + sm[i-w+1] + 2*sm[i+1] + sm[i+w+1];
+      const gy = -sm[i-w-1] - 2*sm[i-w] - sm[i-w+1] + sm[i+w-1] + 2*sm[i+w] + sm[i+w+1];
+      mag[i] = Math.hypot(gx, gy);
+    }
+    const sorted = Float32Array.from(mag).sort();
+    const thr = sorted[Math.floor(sorted.length * (1-keep))];
+    const e = new Uint8Array(w*h);
+    for(let i=0;i<e.length;i++) e[i] = mag[i] > thr ? 1 : 0;
+    return e;
+  }
+  function nearMask(e, w, h, r){          // 1 wherever an edge lies within r pixels
+    const a = new Float32Array(w*h); for(let i=0;i<a.length;i++) a[i] = e[i];
+    const b = boxBlur(a, w, h, r), out = new Uint8Array(w*h);
+    for(let i=0;i<out.length;i++) out[i] = b[i] > 0 ? 1 : 0;
+    return out;
+  }
+  function pearson(a, b){
+    let ma = 0, mb = 0; for(let i=0;i<a.length;i++){ ma += a[i]; mb += b[i]; } ma /= a.length; mb /= b.length;
+    let sab = 0, saa = 0, sbb = 0;
+    for(let i=0;i<a.length;i++){ const x = a[i]-ma, y = b[i]-mb; sab += x*y; saa += x*x; sbb += y*y; }
+    return sab / (Math.sqrt(saa*sbb) || 1);
+  }
+  function structureScoreFromImages(imA, imB){
+    const ar = imA.naturalWidth / imA.naturalHeight;
+    const gw = ar >= 1 ? SCORE_GRID : Math.round(SCORE_GRID*ar), gh = ar >= 1 ? Math.round(SCORE_GRID/ar) : SCORE_GRID;
+    const ea = strongEdges(gridGray(imA, gw, gh), gw, gh, 0.09);
+    const eb = strongEdges(gridGray(imB, gw, gh), gw, gh, 0.09);
+    const tol = Math.max(2, Math.round(Math.max(gw, gh) * 0.02));     // ~2% of the frame
+    const na = nearMask(ea, gw, gh, tol), nb = nearMask(eb, gw, gh, tol);
+    let ca = 0, cb = 0, hitA = 0, hitB = 0;
+    for(let i=0;i<ea.length;i++){ if(ea[i]){ ca++; if(nb[i]) hitA++; } if(eb[i]){ cb++; if(na[i]) hitB++; } }
+    const recall = hitA / (ca || 1), precision = hitB / (cb || 1);
+    const lines = 2*recall*precision / ((recall + precision) || 1);
+    const cell = Math.max(4, Math.round(Math.max(gw, gh) / 16));
+    const cw = Math.ceil(gw/cell), ch = Math.ceil(gh/cell), da = new Float32Array(cw*ch), db = new Float32Array(cw*ch);
+    for(let y=0;y<gh;y++) for(let x=0;x<gw;x++){ const k = ((y/cell)|0)*cw + ((x/cell)|0); da[k] += ea[y*gw+x]; db[k] += eb[y*gw+x]; }
+    const layout = Math.max(0, pearson(da, db));
+    return { lines, layout, score: Math.round(100 * (0.45*lines + 0.55*layout)) };
+  }
+  function loadImageEl(src){ return new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; }); }
+  async function structureScore(draftUrl, resultUrl){
+    const [a, b] = await Promise.all([loadImageEl(draftUrl), loadImageEl(resultUrl)]);
+    if(!a || !b) return null;
+    try{ return structureScoreFromImages(a, b); }catch(e){ return null; }
+  }
+
   let edgeMapDataUrl = null;   // structure guide generated from the draft slot
   let edgePending = null;      // promise while it is being computed
   function refreshEdgeMap(){
@@ -863,15 +1176,19 @@
 
   // localStorage can be unavailable (sandboxed previews, blocked storage), so the
   // key also lives in memory for the current session; setApiKey reports whether it persisted
-  let memoryApiKey = '';
+  // memoryApiKey is null until the key is touched in this session; '' means it was cleared on purpose.
+  // Whatever was entered in this session must win over the stored value: when storage refuses writes,
+  // an old stored key would otherwise keep being used and a freshly entered key would seem to "not work".
+  let memoryApiKey = null;
   function getApiKey(){
-    try { return localStorage.getItem(GEMINI_KEY_STORAGE) || memoryApiKey; } catch(e){ return memoryApiKey; }
+    if(memoryApiKey !== null) return memoryApiKey;
+    try { return localStorage.getItem(GEMINI_KEY_STORAGE) || ''; } catch(e){ return ''; }
   }
   function setApiKey(k){
     memoryApiKey = k;
     try {
       if(k) localStorage.setItem(GEMINI_KEY_STORAGE, k); else localStorage.removeItem(GEMINI_KEY_STORAGE);
-      return true;
+      return (localStorage.getItem(GEMINI_KEY_STORAGE) || '') === k;   // read it back: did it really persist?
     } catch(e){ return false; }
   }
 
@@ -943,9 +1260,17 @@
   function saveApiKeyFromModal(){
     const persisted = setApiKey(apiKeyInput.value.trim());
     updateApiKeyBadge();
-    if(apiKeyInput.value.trim() && !persisted){
-      apiKeyNote.textContent = '이 환경에서는 브라우저 저장이 막혀 있어서, 새로고침하면 키가 사라져요. (이번 세션에는 적용됨)';
-      setTimeout(closeApiKeyModal, 1800);
+    // a draft that was waiting for a key (or whose reading failed) gets read now
+    Object.keys(READINGS).forEach(k => {
+      if(wantsReading(k) && apiKeyReady() && ['nokey','error'].includes(readings[k].status)) analyzeSlot(k);
+    });
+    const entered = apiKeyInput.value.trim();
+    const notes = [];
+    if(entered && !entered.startsWith('AIza')) notes.push('Gemini API 키는 보통 "AIza"로 시작해요. 다른 값을 붙여넣은 건 아닌지 확인해 주세요.');
+    if(entered && !persisted) notes.push('이 환경에서는 브라우저 저장이 막혀 있어서, 새로고침하면 키가 사라져요. (이번 세션에는 적용됨)');
+    if(notes.length){
+      apiKeyNote.textContent = notes.join(' ');
+      setTimeout(closeApiKeyModal, 2600);
     } else {
       closeApiKeyModal();
     }
@@ -968,7 +1293,9 @@
       <span>${c.labelKo}</span>
       <span class="w-2 h-2 rounded-full" style="background:${c.color}"></span>
     </div>
-  `).join('') + `<div class="flex items-center gap-1.5 text-[10px] text-gray-600 mt-1"><span>어울리는 조합 (호버 시)</span><span style="width:16px;height:0;border-top:1.5px solid #cfc6bd;display:inline-block;opacity:.8;"></span></div>`;
+  `).join('') + `<div class="flex items-center gap-2.5 text-[10px] text-gray-400 mt-0.5"><span class="text-gray-600">입력 이미지</span>${
+    [['draft','초안'],['site','현장'],['ref','스타일 참고']].map(([k, l]) => `<span class="inline-flex items-center gap-1.5"><span>${l}</span><span class="w-2 h-2 rounded-full" style="background:${SLOT_COLORS[k]}"></span></span>`).join('')
+  }</div><div class="flex items-center gap-1.5 text-[10px] text-gray-600 mt-1"><span>어울리는 조합 (호버 시)</span><span style="width:16px;height:0;border-top:1.5px solid #cfc6bd;display:inline-block;opacity:.8;"></span></div>`;
 
   // ---------- graph lines (SVG) ----------
   const svg = document.getElementById('graphLines');
@@ -1280,42 +1607,82 @@
   function imageNumbers(){
     const nums = {draft:1};
     let n = 2;
-    ['site','ref'].forEach(id => { if(slotData[id]) nums[id] = n++; });
+    // the edge map is numbered (and sent) right after the draft it was made from
     if(imageSettings.edge && edgeMapDataUrl) nums.edge = n++;
+    ['site','ref'].forEach(id => { if(slotSendsImage(id)) nums[id] = n++; });   // text-mode slots get no image number
     return nums;
   }
 
-  // Structured like a hand-written prompt: what must be retained (with the role of
-  // each image), then one section per lever the user picked, expanded to full sentences.
+  // Structured like a hand-written prompt: what must be retained (with the role of each source),
+  // then one section per lever the user picked, expanded to full sentences.
   function buildPromptBlocks(){
     const n = imageNumbers();
     const blocks = [];
-    blocks.push({t:'title', text:'Image Re-lighting Prompt'});
+    blocks.push({t:'title', text:'Image Editing Prompt'});
+    const anyLever = LEVER_ORDER.some(id => (selected[id]||[]).length);
+    // a site photo / style reference goes in as words when its reading is done, as a picture otherwise
+    const siteText = !n.site && !!slotData.site && hasReading('site');
+    const refText  = !n.ref  && !!slotData.ref  && hasReading('ref');
+
+    // Each source has one job, and the prompt says which one wins for what. Without this, the
+    // "keep everything from Image 1" lines fight the site photo (which supplies materials)
+    // and the style reference (which supplies the color grade).
     blocks.push({t:'section', text:'[Task]'});
-    blocks.push({t:'line', text:`This is a re-lighting and re-texturing task on a fixed base image, not a redesign and not a new scene. Image ${n.draft} is the base: its geometry, layout and framing are locked. Only the light, the color grade and the surface finish may change.`});
+    blocks.push({t:'line', text:`This is an image-editing task on a fixed base image (Image ${n.draft}), not a redesign and not a new scene. Where the provided sources disagree, follow this priority:`});
+    blocks.push({t:'line', text:`- Image ${n.draft} decides the LAYOUT: the main subject (its form and position), every wall, opening and ground plane, and the camera framing. It is locked and always wins on layout and composition.`});
+    if(n.edge) blocks.push({t:'line', text:`- Image ${n.edge} is an edge map of Image ${n.draft} that fixes that layout line by line.`});
+    if(n.site) blocks.push({t:'line', text:`- Image ${n.site} supplies real-world MATERIALS and DETAILS only — surface color, texture and finish of walls, window and door frames and paving. It never decides the layout or the framing, and nothing that is in it (plants, objects, arches, windows) is copied over.`});
+    if(siteText) blocks.push({t:'line', text:`- The Real Site Details below supply the MATERIAL FINISH of existing surfaces only (color, texture, weathering). They never add, remove or move anything and never decide the layout or the framing.`});
+    if(n.ref)  blocks.push({t:'line', text:`- Image ${n.ref} supplies the overall color grade, light quality and mood${anyLever ? ', refined by the options listed below' : ''}. It never decides the layout or the framing.`});
+    if(refText) blocks.push({t:'line', text:`- The Style Reading below supplies the overall color grade, light quality and mood${anyLever ? ', refined by the options listed below' : ''}. It never decides the layout or the framing.`});
+    if(!n.site && !n.ref && !siteText && !refText) blocks.push({t:'line', text:`- Everything in Image ${n.draft} keeps its layout and shape; only the light, the color grade and the surface finish may change.`});
+
+    // what a vision model read from each image (editable in the preview)
+    function readingBlocks(kind, heading, intro){
+      const r = readings[kind];
+      if(hasReading(kind)){
+        blocks.push({t:'section', text:heading, slot:kind});
+        blocks.push({t:'line', text:intro, slot:kind});
+        READINGS[kind].fields.forEach(([f, label]) => {
+          const v = (r.values[f] || '').trim();
+          if(v) blocks.push({t:'analysis', kind, field:f, label, text:v, color:READINGS[kind].color});
+        });
+      } else if(r.status !== 'idle'){
+        blocks.push({t:'status', kind, status:r.status, error:r.error});
+      }
+    }
+    readingBlocks('draft', `[Draft Reading — Image ${n.draft}]`, `The following was read from Image ${n.draft}. The final image must match it exactly.`);
+    if(slotData.site && (!n.site || readings.site.status === 'error')) readingBlocks('site', '[Real Site Details]', `The following describes the material finish of a real location. Apply it as surface color and texture to the elements that already exist in Image ${n.draft}. It never adds, removes or moves anything.`);
+    if(slotData.ref  && (!n.ref || readings.ref.status === 'error')) readingBlocks('ref',  '[Style Reading]',     `The following was read from a color and lighting reference. Match this grade on the whole image; never copy any content, layout or framing.`);
+
     blocks.push({t:'section', text:'[Core Objectives]'});
-    blocks.push({t:'line', text:`- Design (Must Retain): The main subject in Image ${n.draft} (the building, structure or object) keeps exactly the same form — the same silhouette, the same shape and number of parts, the same proportions, and the same position relative to the ground, the walls and everything around it. Do not redesign, replace, simplify or add any element; follow its geometry line by line.`});
-    blocks.push({t:'line', text:`- Perspective (Must Retain): Keep the identical camera position, viewing angle, field of view and framing of Image ${n.draft}, so that every element lands at the same place in the frame. The surrounding structures, walls and ground plane keep their size and position. Do not zoom, crop, shift or reframe.`});
+    blocks.push({t:'line', text:`- Design (Must Retain): The main subject in Image ${n.draft} (the building, structure or object) keeps exactly the same form — the same silhouette, the same shape and number of parts, the same proportions, and the same position in the frame. Do not redesign, replace, simplify or add any element — no new plants, grass, trees, planters or objects, and the ground surface and everything lying on it stay as they are; follow its geometry line by line.`});
+    blocks.push({t:'line', text:`- Perspective (Must Retain): Keep the identical camera position, viewing angle, field of view and framing of Image ${n.draft}, so that every element lands at the same place in the frame: the main subject, and the size and position of the surrounding structures, walls, openings and ground plane. Do not zoom, crop, shift or reframe.${(n.site || n.ref) ? ` Do not adopt the framing, camera position or composition of ${[n.site && `Image ${n.site}`, n.ref && `Image ${n.ref}`].filter(Boolean).join(' or ')}.` : ''}${(siteText || refText) ? ' The site and style descriptions never change the framing.' : ''}`});
     if(n.site){
-      blocks.push({t:'line', text:`- Context (Must Retain): Use the real location shown in Image ${n.site} for the actual surfaces, plants and objects of the setting, but keep the framing, layout and subject placement of Image ${n.draft}.`});
+      blocks.push({t:'line', text:`- Context (Details from Image ${n.site}): Take the real-world details of the place from Image ${n.site} — the color and texture of its stone or plaster, the finish of its window and door frames, and its paving material — and apply them only as surface finish to the elements that already exist in Image ${n.draft}, keeping each element in its place and size. Do not bring any plant, planter, grass, object, arch or window from Image ${n.site} into the picture, and do not add anything that is not in Image ${n.draft}. Never move, resize or redesign the structures of Image ${n.draft} to match Image ${n.site}.`});
+    } else if(siteText){
+      blocks.push({t:'line', text:`- Context (Details from the Real Site Details above): Apply the real-world details described above — the color and texture of the walls, the finish of the window and door frames, and the paving material — only as surface finish on the elements that already exist in Image ${n.draft}, keeping each element in its place and size. Do not add any plant, planter, grass, object, arch or window, and keep the ground exactly as it is in Image ${n.draft}. Never move, resize or redesign the structures of Image ${n.draft} to match the description.`});
     } else {
       blocks.push({t:'line', text:`- Context (Must Retain): Keep every surrounding element of Image ${n.draft} — the buildings and walls with their openings, the ground surface and any other objects — in the same layout and shape. Only their lighting, color and surface texture may change; never replace them with a different building or scene.`});
     }
     if(n.edge){
-      blocks.push({t:'line', text:`- Structure Guide: Image ${n.edge} is an edge map extracted from Image ${n.draft}. Every line in it marks the exact position of an edge or contour in the final image; follow it precisely. (It may miss faint, pale or translucent parts — for those, follow Image ${n.draft}.)`});
+      blocks.push({t:'line', text:`- Structure Guide: Image ${n.edge} is an edge map extracted from Image ${n.draft}. Every line in it marks the exact position of an edge or contour in the final image; follow it precisely — it fixes the layout and the framing.${n.site ? ` Textures, materials and small details come from Image ${n.site}, not from this map.` : (siteText ? ' Textures, materials and small details come from the Real Site Details, not from this map.' : '')} It may miss faint, pale or translucent parts — for those, follow Image ${n.draft}.`});
     }
     if(n.ref){
-      blocks.push({t:'line', text:`- Color Tone (Reference): Adopt the color palette, light quality and mood of Image ${n.ref}. Take only its color tones and lighting character — do not copy its architecture, objects or composition.`});
+      blocks.push({t:'line', text:`- Style Reference (Match Image ${n.ref}): Match the overall color grade of Image ${n.ref} — its dominant hues, warmth, saturation and contrast, the direction, hardness and color of its light and shadows, its sky or haze, and its overall mood. Apply that grade to the whole final image, consistently across the subject and its setting. Copy only the color and the light; never its architecture, objects, composition or textures.${anyLever ? ` The Lighting / Atmosphere / Style options below refine this; where they conflict with Image ${n.ref}, follow the options.` : ` No further options were chosen, so follow Image ${n.ref} for the light and the color mood.`}`});
+    } else if(refText){
+      blocks.push({t:'line', text:`- Style Reference (Match the Style Reading above): Match the color grade described above — its dominant hues, warmth, saturation and contrast, the direction, hardness and color of its light and shadows, its sky or haze, and its overall mood. Apply that grade to the whole final image, consistently across the subject and its setting. Copy only the color and the light.${anyLever ? ' The Lighting / Atmosphere / Style options below refine this; where they conflict with the reading, follow the options.' : ' No further options were chosen, so follow the reading for the light and the color mood.'}`});
     }
     LEVER_ORDER.forEach(id => {
       const vals = selected[id];
       if(!vals || !vals.length) return;
       const cat = categoryById(id);
       blocks.push({t:'section', text:SECTION_TITLES[id]});
+      if(id === 'style') blocks.push({t:'line', text:STYLE_STRENGTH_INTRO[imageSettings.strength](n.draft)});
       vals.forEach(v => blocks.push({t:'lever', label:v.label, text:OPTION_DETAILS[v.id] || v.prompt, color:cat.color}));
     });
     blocks.push({t:'section', text:'[Output]'});
-    blocks.push({t:'line', text:`Return a single finished image at the same aspect ratio as Image ${n.draft}, with no text, borders or watermarks. The main subject, the surrounding structures and the ground must sit in exactly the same places in the frame as in Image ${n.draft}.`});
+    blocks.push({t:'line', text:`Return a single finished image at the same aspect ratio as Image ${n.draft}, with no text, borders or watermarks. The main subject, the surrounding structures and the ground must sit in exactly the same places in the frame as in Image ${n.draft}, with the same framing and camera position, and the main subject must remain the same design — not a different kind of structure.`});
     return blocks;
   }
 
@@ -1324,22 +1691,75 @@
     const anyLever = LEVER_ORDER.some(id => (selected[id]||[]).length);
     let html = blocks.map(b => {
       if(b.t === 'title') return `<div class="prompt-title">${b.text}</div>`;
-      if(b.t === 'section') return `<div class="prompt-section">${b.text}</div>`;
+      const slotAttr = k => k ? ` data-slot="${k}" style="--slot-color:${SLOT_COLORS[k]}"` : '';
+      if(b.t === 'section') return `<div class="prompt-section"${slotAttr(b.slot)}>${b.text}</div>`;
       if(b.t === 'lever') return `<div class="prompt-lever" style="--frag-color:${b.color}"><span style="color:${b.color}">${b.label}</span> — ${b.text}</div>`;
-      return `<div class="text-gray-400">${b.text}</div>`;
+      if(b.t === 'analysis') return `<div class="prompt-lever" data-slot="${b.kind}" style="--frag-color:${b.color}; --slot-color:${b.color}"><span style="color:${b.color}">${b.label}</span> — <span class="edit-field" contenteditable="true" spellcheck="false" data-reading="${b.kind}" data-analysis-field="${b.field}" title="클릭해서 직접 수정">${escapeHtml(b.text)}</span></div>`;
+      if(b.t === 'status'){
+        const sa = slotAttr(b.kind);
+        const what = { draft:'초안에서 형태 · 위치 · 구도', site:'현장 사진에서 재질 · 디테일', ref:'스타일 참고에서 색감 · 빛' }[b.kind];
+        if(b.status === 'loading') return `<div class="prompt-status"${sa}><span class="spin"></span>${what}을(를) 읽는 중…</div>`;
+        if(b.status === 'nokey') return `<div class="prompt-status"${sa}>${what}을(를) 자동으로 읽어 넣으려면 🔑 API Key를 설정하세요.</div>`;
+        const fallback = b.kind === 'draft' ? '' : ' 사진을 이미지로 직접 전송합니다.';
+        return `<div class="prompt-status is-error"${sa}>${{draft:'초안',site:'현장 사진',ref:'스타일 참고'}[b.kind]} 분석 실패: ${escapeHtml(b.error || '')}${fallback} <button data-analysis-retry="${b.kind}">다시 분석</button></div>`;
+      }
+      return `<div class="text-gray-400"${slotAttr(b.slot)}>${b.text}</div>`;
     }).join('');
     if(!anyLever) html += `<div class="text-gray-600 mt-2"># 그래프에서 lighting · atmosphere · style을 선택하면 해당 섹션이 추가돼요.</div>`;
     promptBox.innerHTML = html;
+    if(hlSlot) applySlotHighlight();
+    updateStepper();
   }
+
+  // hovering an input image lights up its section in the prompt (and the other way round)
+  let hlSlot = null;
+  function applySlotHighlight(){
+    promptBox.querySelectorAll('.is-hl').forEach(el => el.classList.remove('is-hl'));
+    if(hlSlot) promptBox.querySelectorAll(`[data-slot="${hlSlot}"]`).forEach(el => el.classList.add('is-hl'));
+    SLOT_DEFS.forEach(s => slotEl(s.id).classList.toggle('is-hl', s.id === hlSlot));
+  }
+  function setSlotHighlight(id, reveal){
+    if(hlSlot === id) return;
+    hlSlot = id;
+    applySlotHighlight();
+    if(id && reveal){ const first = promptBox.querySelector(`[data-slot="${id}"]`); if(first) first.scrollIntoView({block:'nearest', behavior:'smooth'}); }
+  }
+
+  function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function plainPromptText(){
     return buildPromptBlocks().map(b => {
       if(b.t === 'title') return b.text;
       if(b.t === 'section') return '\n' + b.text;
       if(b.t === 'lever') return `- ${b.label}: ${b.text}`;
+      if(b.t === 'analysis') return `- ${b.label}: ${b.text}`;
+      if(b.t === 'status') return null;     // progress / error notes are for the preview only
       return b.text;
-    }).join('\n').trim();
+    }).filter(v => v !== null).join('\n').trim();
   }
+
+  // editable draft-reading fields: typing updates the prompt text directly (no re-render while typing)
+  promptBox.addEventListener('input', (e) => {
+    const f = e.target.closest && e.target.closest('[data-analysis-field]');
+    if(f && readings[f.dataset.reading]){
+      const r = readings[f.dataset.reading];
+      r.values[f.dataset.analysisField] = f.textContent.replace(/\s*\n\s*/g, ' ');
+      r.edited = true;
+    }
+  });
+  promptBox.addEventListener('keydown', (e) => {
+    if(e.key === 'Enter' && e.target.closest && e.target.closest('[data-analysis-field]')) e.preventDefault();
+  });
+  promptBox.addEventListener('paste', (e) => {
+    if(!(e.target.closest && e.target.closest('[data-analysis-field]'))) return;
+    e.preventDefault();
+    const t = ((e.clipboardData || window.clipboardData).getData('text/plain') || '').replace(/\s*\n\s*/g, ' ');
+    document.execCommand('insertText', false, t);
+  });
+  promptBox.addEventListener('click', (e) => {
+    const btn = e.target.closest && e.target.closest('[data-analysis-retry]');
+    if(btn && readings[btn.dataset.analysisRetry]){ readings[btn.dataset.analysisRetry].edited = false; analyzeSlot(btn.dataset.analysisRetry); }
+  });
 
   // ---------- chips ----------
   const chipsEl = document.getElementById('chips');
@@ -1381,6 +1801,7 @@
 
   // ---------- copy (with legacy fallback + user-visible failure state) ----------
   document.getElementById('copyBtn').addEventListener('click', async () => {
+    progress.reviewed = true; updateStepper();
     const text = plainPromptText();
     const tag = document.getElementById('copiedTag');
     function flashTag(msg, isError){
@@ -1414,22 +1835,23 @@
 
   // ---------- reference image slots ----------
   const SLOT_DEFS = [
-    {id:'draft', label:'초안',        hint:'형태 · 위치 · 구도', required:true, apiLabel:'the base draft image — its main subject, position and framing to preserve'},
-    {id:'site',  label:'현장 사진',    hint:'실제 배경 · 맥락',    required:false, apiLabel:'a photo of the real site — the actual setting and background'},
-    {id:'ref',   label:'스타일 참고',  hint:'색감 · 빛',          required:false, apiLabel:'a style reference — for color palette and lighting character only'},
+    {id:'draft', label:'초안',        hint:'형태 · 위치 · 구도', required:true, apiLabel:'the base image — it contains the main subject (its exact form and position) and the camera framing to keep'},
+    {id:'site',  label:'현장 사진',    hint:'실제 배경 · 맥락',    required:false, apiLabel:'a photo of the real location — a reference for its real materials, textures and details (stone, plaster, windows, paving, plants); do NOT use its layout or framing'},
+    {id:'ref',   label:'스타일 참고',  hint:'색감 · 빛',          required:false, apiLabel:'a color and lighting reference — match its color grade and light quality only; do not copy its content, layout or framing'},
   ];
   const slotData = {}; // slotId -> {dataUrl, ratio}
   const slotsWrap = document.getElementById('slotsWrap');
 
   slotsWrap.innerHTML = SLOT_DEFS.map(s => `
-    <div class="slot" data-slot="${s.id}">
-      <div class="slot-label"><span>${s.label}${s.required ? ' <b class="slot-req">필수</b>' : ''}</span><span class="slot-badge hidden"></span></div>
+    <div class="slot" data-slot="${s.id}" style="--slot-color:${SLOT_COLORS[s.id]}">
+      <div class="slot-label"><span><i class="slot-dot"></i>${s.label}${s.required ? ' <b class="slot-req">필수</b>' : ''}</span><span class="slot-badge hidden"></span></div>
       <div class="slot-drop">
         <div class="slot-empty">클릭 · 드래그<small>${s.hint}</small></div>
         <img class="slot-preview hidden" alt="" />
         <button class="slot-clear hidden" title="삭제">✕</button>
         <input type="file" accept="image/*" class="hidden" />
       </div>
+      ${s.id === 'draft' ? '' : `<button class="slot-mode hidden" data-mode-toggle="${s.id}" title="이 사진을 글로 읽어서 전달할지, 이미지 그대로 전달할지 선택 (글이 구도 유지에 유리, 이미지는 반영이 더 직접적)"></button>`}
     </div>`).join('');
 
   function slotEl(id){ return slotsWrap.querySelector(`[data-slot="${id}"]`); }
@@ -1437,11 +1859,18 @@
   function paintSlot(id){
     const el = slotEl(id);
     const has = !!slotData[id];
+    el.classList.toggle('has-img', has);
     const preview = el.querySelector('.slot-preview');
     preview.src = has ? slotData[id].dataUrl : '';
     preview.classList.toggle('hidden', !has);
     el.querySelector('.slot-empty').classList.toggle('hidden', has);
     el.querySelector('.slot-clear').classList.toggle('hidden', !has);
+    const modeBtn = el.querySelector('.slot-mode');
+    if(modeBtn){
+      modeBtn.classList.toggle('hidden', !has);
+      modeBtn.textContent = slotMode[id] === 'text' ? '글로 전달' : '이미지 직접';
+      modeBtn.classList.toggle('is-text', slotMode[id] === 'text');
+    }
   }
 
   // the draft slot drives the result modal, the Gemini aspect ratio and the mock preview
@@ -1460,12 +1889,14 @@
       const badge = slotEl(s.id).querySelector('.slot-badge');
       const has = !!slotData[s.id];
       badge.classList.toggle('hidden', !has);
-      if(has) badge.textContent = 'Image ' + nums[s.id];
+      if(has) badge.textContent = nums[s.id] ? 'Image ' + nums[s.id] : 'TEXT';
     });
   }
 
   function afterSlotsChanged(id){
     if(id === 'draft'){ syncDraft(); refreshEdgeMap(); }
+    resetReading(id);
+    analyzeSlot(id);          // no-op for a text-mode-off or empty slot
     updateSlotBadges();
     updatePrompt();
     updateGenerateButtonLabel();
@@ -1487,6 +1918,8 @@
 
   SLOT_DEFS.forEach(s => {
     const el = slotEl(s.id);
+    el.addEventListener('mouseenter', () => setSlotHighlight(s.id, true));
+    el.addEventListener('mouseleave', () => setSlotHighlight(null));
     const drop = el.querySelector('.slot-drop');
     const input = el.querySelector('input[type=file]');
     drop.addEventListener('click', () => input.click());
@@ -1495,7 +1928,68 @@
     drop.addEventListener('dragleave', () => drop.classList.remove('is-over'));
     drop.addEventListener('drop', (e) => { e.preventDefault(); drop.classList.remove('is-over'); loadSlot(s.id, e.dataTransfer.files[0]); });
     el.querySelector('.slot-clear').addEventListener('click', (e) => { e.stopPropagation(); clearSlot(s.id); });
+    const modeBtn = el.querySelector('.slot-mode');
+    if(modeBtn) modeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      slotMode[s.id] = slotMode[s.id] === 'text' ? 'image' : 'text';
+      paintSlot(s.id);
+      resetReading(s.id);
+      analyzeSlot(s.id);      // text mode reads the photo; image mode just refreshes the prompt
+      updateSlotBadges();
+      updatePrompt();
+    });
   });
+
+  // ---------- prompt <-> slot linking ----------
+  promptBox.addEventListener('mouseover', (e) => { const el = e.target.closest('[data-slot]'); setSlotHighlight(el ? el.dataset.slot : null); });
+  promptBox.addEventListener('mouseleave', () => setSlotHighlight(null));
+
+  // ---------- workflow stepper ----------
+  // 1 upload the draft -> 2 pick options -> 3 look the prompt over -> 4 generate.
+  // The first step that is not done yet is the current one; clicking a step pulses the area it is about.
+  const progress = { reviewed:false, generated:false };
+  const STEP_HINTS = {
+    1:'아래 왼쪽에 초안 이미지를 올려주세요 (현장 사진 · 스타일 참고는 선택)',
+    2:'카테고리에 커서를 올려 옵션을 펼치고, 클릭해서 선택하세요',
+    3:'아래 프롬프트를 확인하고, 필요하면 직접 고쳐보세요',
+    4:'Generate를 눌러 결과를 만들어보세요',
+    0:'완료! 옵션이나 이미지를 바꿔 다시 생성해볼 수 있어요',
+  };
+  const HUB_HINTS = { 1:'먼저 아래에서 초안 이미지를 올려주세요 ↓', 2:'이제 lighting · atmosphere · style 옵션을 골라보세요' };
+  const stepHintEl = document.getElementById('stepHint');
+  const hubHintEl = document.getElementById('hubHint');
+  let hubHintText = '';
+  function updateStepper(){
+    const hasDraft = !!slotData.draft;
+    const hasOpt = LEVER_ORDER.some(id => (selected[id] || []).length);
+    const done = { 1:hasDraft, 2:hasOpt, 3:hasDraft && hasOpt && (progress.reviewed || progress.generated), 4:progress.generated };
+    const cur = [1,2,3,4].find(n => !done[n]) || 0;
+    document.querySelectorAll('.step, .step-no').forEach(el => {
+      const n = +(el.dataset.step || el.dataset.n);
+      el.classList.toggle('is-done', !!done[n]);
+      el.classList.toggle('is-current', n === cur);
+    });
+    stepHintEl.textContent = STEP_HINTS[cur];
+    stepHintEl.title = STEP_HINTS[cur];
+    const ht = HUB_HINTS[cur] || '';
+    if(ht) hubHintText = ht;
+    hubHintEl.textContent = hubHintText;
+    hubHintEl.classList.toggle('is-off', !ht);
+  }
+  function pulseArea(el){
+    if(!el) return;
+    el.classList.remove('area-pulse'); void el.offsetWidth; el.classList.add('area-pulse');
+    setTimeout(() => el.classList.remove('area-pulse'), 1500);
+  }
+  document.getElementById('stepper').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-step]'); if(!b) return;
+    const n = +b.dataset.step;
+    if(n === 1) pulseArea(slotsWrap);
+    else if(n === 2) CATEGORIES.forEach(c => pulseArea(c.el));
+    else if(n === 3) pulseArea(promptBox);
+    else pulseArea(document.getElementById('generateBtn'));
+  });
+  ['pointerdown', 'wheel', 'focusin'].forEach(ev => promptBox.addEventListener(ev, () => { if(!progress.reviewed){ progress.reviewed = true; updateStepper(); } }, { passive:true }));
 
   // ---------- mock render result ----------
   function pavilionSVG({after=false, gradient=['#f59e0b','#fde68a']}={}){
@@ -1560,6 +2054,7 @@
     setPanelRatio(resultAfter, uploadedRatio || 1.5);
     resultAfter.innerHTML = `<span class="text-[11px] text-gray-600 px-3 text-center">Generate를 누르면<br/>결과가 나타나요</span>`;
     resultAfter.classList.add('flex','items-center','justify-center');
+    hideVerdict();
   }
 
   // ---------- result modal ----------
@@ -1602,6 +2097,38 @@
   function showMockLabel(){ resultModeBadge.textContent = 'MOCK'; resultModeBadge.classList.remove('text-emerald-400','border-emerald-400/40'); }
   function showAiLabel(){ resultModeBadge.textContent = 'AI 생성'; resultModeBadge.classList.add('text-emerald-400','border-emerald-400/40'); }
 
+  // added to the prompt of a retry, after an attempt whose lines no longer matched the draft
+  const RETRY_NOTE = `\n\n[Retry Note]\nA previous attempt did not keep the framing of Image 1: the main subject, an opening or the camera had moved or changed size. Trace Image 1 more strictly this time — the same camera, the same size and position of every opening and wall, the same main subject in the same place — and change only the light, color and surface finish.`;
+
+  const verdictEl = document.getElementById('resultVerdict');
+  function hideVerdict(){ verdictEl.style.display = 'none'; verdictEl.innerHTML = ''; }
+  // shows one attempt in the STYLED panel, plus its structure score and the other attempts to switch to
+  async function showAttempt(attempts, cur, best){
+    const a = attempts[cur];
+    // size the panel to the ratio the model actually returned, so nothing is cropped
+    const outDims = await measureImage(a.url);
+    setPanelRatio(resultAfter, outDims ? outDims.w / outDims.h : (uploadedRatio || 1.5));
+    resultAfter.classList.remove('flex','items-center','justify-center');
+    resultAfter.innerHTML = `<img src="${a.url}" class="w-full h-full object-contain"/>`;
+    resultAfter.style.animation = 'fadeIn .6s ease';
+
+    const scored = attempts.some(x => x.sc);
+    if(!scored){ hideVerdict(); return; }
+    const s = a.sc ? a.sc.score : null;
+    const cls = s == null ? '' : s >= SCORE_PASS ? 'is-good' : s >= SCORE_PASS - 15 ? 'is-mid' : 'is-low';
+    const word = s == null ? '' : s >= SCORE_PASS ? '유지됨' : s >= SCORE_PASS - 15 ? '일부 어긋남' : '많이 어긋남';
+    let html = `<span class="verdict-chip ${cls}" title="초안과 결과의 윤곽선·큰 덩어리 위치를 비교한 값입니다 (선 ${a.sc ? Math.round(a.sc.lines*100) : '-'}% · 배치 ${a.sc ? Math.round(a.sc.layout*100) : '-'}%)">구조 일치 ${s == null ? '-' : s + '%'}${word ? ' · ' + word : ''}</span>`;
+    if(attempts.length > 1){
+      html += attempts.map((x, i) => `<button type="button" class="verdict-chip${i === cur ? ' is-current' : ''}" data-attempt="${i}">${i + 1}번${x.sc ? ' · ' + x.sc.score + '%' : ''}${i === best ? ' ★' : ''}</button>`).join('');
+    }
+    const top = attempts[best].sc;
+    if(top && top.score < SCORE_PASS) html += `<span class="w-full text-gray-500 leading-snug">${attempts.length}번 시도했지만 기준(${SCORE_PASS}%)에 못 미쳤어요. 가장 가까운 결과를 보여줍니다. 스타일 강도를 '약하게'로 낮춰보세요.</span>`;
+    else if(attempts.length > 1) html += `<span class="w-full text-gray-500 leading-snug">${attempts.length}번 만에 구조가 유지된 결과를 골랐어요.</span>`;
+    verdictEl.innerHTML = html;
+    verdictEl.style.display = 'flex';
+    verdictEl.querySelectorAll('[data-attempt]').forEach(btn => btn.addEventListener('click', () => showAttempt(attempts, +btn.dataset.attempt, best)));
+  }
+
   generateBtn.addEventListener('click', async () => {
     generateBtn.disabled = true;
     generateBtn.textContent = 'Generating…';
@@ -1622,38 +2149,59 @@
 
       try{
         if(edgePending) await edgePending;   // make sure the structure guide is ready
+        const waiting = pendingReadings();
+        if(waiting.length) await Promise.all(waiting);   // ...and that the readings have finished
         const nums = imageNumbers();
-        const images = SLOT_DEFS.filter(s => slotData[s.id]).map(s => ({
-          caption: `Image ${nums[s.id]}: ${s.apiLabel}.`,
-          dataUrl: slotData[s.id].dataUrl,
-        }));
+        // sent in the same order the prompt numbers them: draft, its edge map, site photo, style reference
+        const images = [];
+        SLOT_DEFS.forEach(s => {
+          if(!slotSendsImage(s.id)) return;     // a slot sent as words contributes no picture
+          images.push({ n: nums[s.id], caption: `Image ${nums[s.id]}: ${s.apiLabel}.`, dataUrl: slotData[s.id].dataUrl });
+        });
         if(nums.edge){
           images.push({
-            caption: `Image ${nums.edge}: an edge map (black line drawing) extracted from Image 1 — a structural guide showing the exact position of its edges and contours.`,
+            n: nums.edge,
+            caption: `Image ${nums.edge}: an edge map (black line drawing) extracted from Image 1 — it fixes the exact position of the edges and contours of the layout and framing.`,
             dataUrl: edgeMapDataUrl,
           });
         }
-        const resultUrl = await callGeminiImageEdit({
-          promptText: plainPromptText(),
-          images,
-          apiKey: getApiKey(),
-          aspect: uploadedAspect,
-          model: imageSettings.model,
-          imageSize: imageSettings.size,
-        });
+        images.sort((a, b) => a.n - b.n);
+        const basePrompt = plainPromptText();
+        // generate, check the result's lines against the draft, and try again while the structure drifted
+        const verify = imageSettings.verify && !!slotData.draft;
+        const maxTries = verify ? MAX_ATTEMPTS : 1;
+        const attempts = [];
+        for(let t = 1; t <= maxTries; t++){
+          if(maxTries > 1) generateBtn.textContent = `Generating… (${t}/${maxTries})`;
+          try{
+            const url = await callGeminiImageEdit({
+              promptText: t === 1 ? basePrompt : basePrompt + RETRY_NOTE,
+              images,
+              apiKey: getApiKey(),
+              aspect: uploadedAspect,
+              model: imageSettings.model,
+              imageSize: imageSettings.size,
+            });
+            if(verify) generateBtn.textContent = `Checking structure… (${t}/${maxTries})`;
+            const sc = verify ? await structureScore(slotData.draft.dataUrl, url) : null;
+            attempts.push({ url, sc });
+            if(!sc || sc.score >= SCORE_PASS) break;
+          }catch(err){
+            if(!attempts.length) throw err;     // the first call failed: fall back to the mock as before
+            break;                              // a retry failed: keep what we already have
+          }
+        }
         clearInterval(creep);
         progressBar.style.transition = 'width .2s linear';
         progressBar.style.width = '100%';
-        // size the panel to the ratio the model actually returned, so nothing is cropped
-        const outDims = await measureImage(resultUrl);
-        setPanelRatio(resultAfter, outDims ? outDims.w / outDims.h : (uploadedRatio || 1.5));
-        resultAfter.classList.remove('flex','items-center','justify-center');
-        resultAfter.innerHTML = `<img src="${resultUrl}" class="w-full h-full object-contain"/>`;
-        resultAfter.style.animation = 'fadeIn .6s ease';
+        let best = attempts.length - 1;
+        attempts.forEach((a, i) => { if(a.sc && (!attempts[best].sc || a.sc.score > attempts[best].sc.score)) best = i; });
+        await showAttempt(attempts, best, best);
         showAiLabel();
       }catch(err){
         clearInterval(creep);
         progressBar.style.width = '100%';
+        hideVerdict();
         renderMockAfter();
         const note = document.createElement('div');
         note.className = 'absolute inset-x-0 bottom-0 px-2 py-1 text-[10px] text-red-300 leading-snug';
@@ -1664,6 +2212,7 @@
         showMockLabel();
       }
     } else {
+      hideVerdict();
       requestAnimationFrame(() => requestAnimationFrame(() => {
         progressBar.style.transition = 'width 3s linear';
         progressBar.style.width = '100%';
@@ -1671,12 +2220,23 @@
       await new Promise(r => setTimeout(r, 3000));
       renderMockAfter();
       showMockLabel();
+      // say why this is only a mock, so a tinted copy of the draft is not mistaken for an AI result
+      const why = !apiKeyReady()
+        ? 'API 키가 없어 mock(색만 입힌 미리보기)입니다. 우측 상단 🔑 API Key 설정에서 키를 넣어주세요.'
+        : 'mock입니다. 초안 이미지를 올리면 실제로 생성돼요.';
+      const note = document.createElement('div');
+      note.className = 'absolute inset-x-0 bottom-0 px-3 py-2 text-[11px] text-amber-200 leading-snug';
+      note.style.background = 'linear-gradient(to top, rgba(0,0,0,.88), transparent)';
+      note.textContent = why;
+      resultAfter.appendChild(note);
     }
 
     generateBtn.disabled = false;
     updateGenerateButtonLabel();
     generateBtn.classList.remove('opacity-60');
     progressWrap.classList.add('hidden');
+    progress.generated = true;
+    updateStepper();
     openResultModal();
   });
 
