@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Pavilion Prompt Studio</title>
+<title>Interactive Prompt Builder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -220,8 +220,7 @@
   <div id="graphPanel" class="relative overflow-hidden" style="background:radial-gradient(circle at 50% 42%, #16161a 0%, #0b0b0d 70%);">
 
     <div class="absolute top-6 left-7 z-40 select-none pointer-events-none max-w-[420px]">
-      <div class="text-[11px] tracking-[0.25em] text-gray-500 font-display">MONTPELLIER COURTYARD</div>
-      <h1 class="font-display text-xl font-semibold text-[#f2efe9] mt-1">Pavilion Prompt Studio</h1>
+      <h1 class="font-display text-xl font-semibold text-[#f2efe9]">Interactive Prompt Builder</h1>
       <p class="text-[12px] text-gray-500 mt-1">노드 호버로 미리보기 · 클릭으로 선택 · 점선은 서로 어울리는 조합</p>
       <div class="flex items-center gap-1.5 flex-wrap mt-2.5 pointer-events-auto">
         <span class="text-[10px] text-gray-600">🔒 레퍼런스 이미지로 고정됨 (변경 불가):</span>
@@ -381,19 +380,19 @@
   // option expands into a full descriptive sentence (light direction, shadow
   // behaviour, palette, material rendering) when the prompt is assembled.
   const OPTION_DETAILS = {
-    'light-golden':    'Low-angle, warm amber golden-hour sunlight raking across the scene from the side. Long, soft-edged shadows fall across the ground and walls; highlights glow honey-gold on pale stone, fabric and mesh, while the shadows stay warm and gently lifted.',
+    'light-golden':    'Low-angle, warm amber golden-hour sunlight raking across the scene from the side. Long, soft-edged shadows fall across the ground and walls; highlights glow honey-gold on pale surfaces and thin or translucent materials, while the shadows stay warm and gently lifted.',
     'light-overcast':  'Soft, even daylight under a uniformly bright overcast sky. Shadows are faint and feather-edged with no harsh contrast, so surface textures read clearly with gentle, low-contrast modeling.',
-    'light-backlight': 'Strong sun placed behind and above the structure, producing luminous rim light along its edges, a translucent glow through thin fabric or mesh, and deep, high-contrast shadows falling toward the camera.',
-    'light-midday':    'High overhead midday sun with crisp, hard-edged short shadows and strong highlight-to-shadow contrast. The structure casts sharp geometric shadow patterns onto the ground beneath it, under a clear, saturated sky.',
-    'atmo-beige':      'A palette of warm neutrals — sand, cream and aged-stone beige — with soft amber accents. Avoid any cool or blue cast in the shadows, walls or ground.',
-    'atmo-turquoise':  'A cool, fresh palette with subtle turquoise and teal undertones in the shadows and sky reflections, balanced against neutral stone so that all materials stay believable.',
+    'light-backlight': 'Strong sun placed behind and above the main subject, producing luminous rim light along its edges, a translucent glow through any thin or translucent materials, and deep, high-contrast shadows falling toward the camera.',
+    'light-midday':    'High overhead midday sun with crisp, hard-edged short shadows and strong highlight-to-shadow contrast. The main subject casts sharp, well-defined shadow patterns onto the surfaces around and beneath it, under a clear, saturated sky.',
+    'atmo-beige':      'A palette of warm neutrals — sand, cream and warm stone beige — with soft amber accents. Avoid any cool or blue cast in the shadows, walls or ground.',
+    'atmo-turquoise':  'A cool, fresh palette with subtle turquoise and teal undertones in the shadows and sky reflections, balanced against neutral surfaces so that all materials stay believable.',
     'atmo-charcoal':   'Deep charcoal and near-black accents in the shadow areas and structural details, adding weight and contrast against the lighter surfaces without crushing detail.',
     'atmo-serene':     'A quiet, still, contemplative mood: soft tonal transitions, restrained contrast, nothing busy or cluttered, a gentle stillness in the air.',
     'atmo-vibrant':    'A lively, inviting mood with richer color saturation and a feeling of warmth and life, as a place where people would want to gather. Do not add new objects or people.',
-    'style-photo':     'A photorealistic finish with a clean, detailed, high-resolution look. Give the existing surfaces real material texture and a natural response to light — the grain of stone, the weave of fabric or mesh, sand and wood clearly resolved — with a natural color grade. This changes surface finish only, never the geometry or the framing.',
-    'style-watercolor':'An architectural watercolor illustration with translucent washes, soft pigment blooms and delicate pencil linework, keeping every form and proportion exactly as in the reference.',
+    'style-photo':     'A photorealistic finish with a clean, detailed, high-resolution look. Give the existing surfaces real material texture and a natural response to light — the grain of stone, wood and fabric, the finish of metal and glass, wherever those materials appear, clearly resolved — with a natural color grade. This changes surface finish only, never the geometry or the framing.',
+    'style-watercolor':'A watercolor illustration with translucent washes, soft pigment blooms and delicate pencil linework, keeping every form and proportion exactly as in the reference.',
     'style-cinematic': 'A filmic look with a strong tonal range, subtle atmospheric depth and a cohesive graded color palette, like a still from a feature film.',
-    'style-lineart':   'A clean architectural line drawing with fine, consistent linework, minimal flat tonal fills and generous white space, keeping every form exactly in place.',
+    'style-lineart':   'A clean line drawing with fine, consistent linework, minimal flat tonal fills and generous white space, keeping every form exactly in place.',
   };
 
   // curated "goes well together" pairings across categories, drawn as dashed
@@ -780,7 +779,7 @@
   // ---------- graph nodes ----------
   const graphField = document.getElementById('graphField');
   function renderNodes(){
-    let html = `<div class="hub-bubble bubble">PAVILION</div>`;
+    let html = `<div class="hub-bubble bubble">IMAGE CREATOR</div>`;
     CATEGORIES.forEach(cat => {
       html += `
         <div class="cat-anchor bubble" style="left:${pct(cat.pos.x,W)}; top:${pct(cat.pos.y,H)}; color:${cat.color}; border-color:${cat.color}66;">
@@ -875,19 +874,19 @@
   function buildPromptBlocks(){
     const n = imageNumbers();
     const blocks = [];
-    blocks.push({t:'title', text:'Pavilion Re-lighting Prompt'});
+    blocks.push({t:'title', text:'Image Re-lighting Prompt'});
     blocks.push({t:'section', text:'[Task]'});
     blocks.push({t:'line', text:`This is a re-lighting and re-texturing task on a fixed base image, not a redesign and not a new scene. Image ${n.draft} is the base: its geometry, layout and framing are locked. Only the light, the color grade and the surface finish may change.`});
     blocks.push({t:'section', text:'[Core Objectives]'});
-    blocks.push({t:'line', text:`- Design (Must Retain): The pavilion in Image ${n.draft} keeps exactly the same form — the same silhouette, the same shape and number of structural parts (canopy, supports, ties), the same proportions, and the same position relative to the arch, the ground and the walls. Do not redesign, replace, simplify or add any element; follow its geometry line by line.`});
-    blocks.push({t:'line', text:`- Perspective (Must Retain): Keep the identical camera position, viewing angle, field of view and framing of Image ${n.draft}, so that every element lands at the same place in the frame. The arch, walls and ground plane keep their size and position. Do not zoom, crop, shift or reframe.`});
+    blocks.push({t:'line', text:`- Design (Must Retain): The main subject in Image ${n.draft} (the building, structure or object) keeps exactly the same form — the same silhouette, the same shape and number of parts, the same proportions, and the same position relative to the ground, the walls and everything around it. Do not redesign, replace, simplify or add any element; follow its geometry line by line.`});
+    blocks.push({t:'line', text:`- Perspective (Must Retain): Keep the identical camera position, viewing angle, field of view and framing of Image ${n.draft}, so that every element lands at the same place in the frame. The surrounding structures, walls and ground plane keep their size and position. Do not zoom, crop, shift or reframe.`});
     if(n.site){
-      blocks.push({t:'line', text:`- Context (Must Retain): Use the real location shown in Image ${n.site} for the actual surfaces, plants and objects of the setting, but keep the framing, layout and pavilion placement of Image ${n.draft}.`});
+      blocks.push({t:'line', text:`- Context (Must Retain): Use the real location shown in Image ${n.site} for the actual surfaces, plants and objects of the setting, but keep the framing, layout and subject placement of Image ${n.draft}.`});
     } else {
-      blocks.push({t:'line', text:`- Context (Must Retain): Keep every surrounding element of Image ${n.draft} — the arch, the building facades and windows, the paving, the rocks and the sand — in the same layout and shape. Only their lighting, color and surface texture may change; never replace them with a different building or scene.`});
+      blocks.push({t:'line', text:`- Context (Must Retain): Keep every surrounding element of Image ${n.draft} — the buildings and walls with their openings, the ground surface and any other objects — in the same layout and shape. Only their lighting, color and surface texture may change; never replace them with a different building or scene.`});
     }
     if(n.edge){
-      blocks.push({t:'line', text:`- Structure Guide: Image ${n.edge} is an edge map extracted from Image ${n.draft}. Every line in it marks the exact position of an edge or contour in the final image; follow it precisely. (It may miss faint or translucent parts such as a pale mesh canopy — for those, follow Image ${n.draft}.)`});
+      blocks.push({t:'line', text:`- Structure Guide: Image ${n.edge} is an edge map extracted from Image ${n.draft}. Every line in it marks the exact position of an edge or contour in the final image; follow it precisely. (It may miss faint, pale or translucent parts — for those, follow Image ${n.draft}.)`});
     }
     if(n.ref){
       blocks.push({t:'line', text:`- Color Tone (Reference): Adopt the color palette, light quality and mood of Image ${n.ref}. Take only its color tones and lighting character — do not copy its architecture, objects or composition.`});
@@ -900,7 +899,7 @@
       vals.forEach(v => blocks.push({t:'lever', label:v.label, text:OPTION_DETAILS[v.id] || v.prompt, color:cat.color}));
     });
     blocks.push({t:'section', text:'[Output]'});
-    blocks.push({t:'line', text:`Return a single finished image at the same aspect ratio as Image ${n.draft}, with no text, borders or watermarks. The pavilion, arch, walls and ground must sit in exactly the same places in the frame as in Image ${n.draft}.`});
+    blocks.push({t:'line', text:`Return a single finished image at the same aspect ratio as Image ${n.draft}, with no text, borders or watermarks. The main subject, the surrounding structures and the ground must sit in exactly the same places in the frame as in Image ${n.draft}.`});
     return blocks;
   }
 
@@ -999,7 +998,7 @@
 
   // ---------- reference image slots ----------
   const SLOT_DEFS = [
-    {id:'draft', label:'초안',        hint:'형태 · 위치 · 구도', required:true, apiLabel:'the concept render — the pavilion design, position and framing to preserve'},
+    {id:'draft', label:'초안',        hint:'형태 · 위치 · 구도', required:true, apiLabel:'the base draft image — its main subject, position and framing to preserve'},
     {id:'site',  label:'현장 사진',    hint:'실제 배경 · 맥락',    required:false, apiLabel:'a photo of the real site — the actual setting and background'},
     {id:'ref',   label:'스타일 참고',  hint:'색감 · 빛',          required:false, apiLabel:'a style reference — for color palette and lighting character only'},
   ];
